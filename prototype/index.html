@@ -102,11 +102,15 @@ const LANES = {
 };
 // type: 0 rocky, 1 gas, 2 ocean, 3 lava, 4 ice.  size: 1 small, 2 medium, 3 large
 const B = [
- {id:'contact',name:'Contact',lane:'sun',what:'Developer based in Sydney. Say hello.',when:'',part:'',stack:[],desc:'A three-line pitch and the top skills, computed from the entries, will sit here.'},
- {id:'linfox',name:'Linfox',lane:'career',size:3,type:2,pal:[0x1f5f8b,0x6b8f4e,0xf1efe8],what:'Role and years, one line',when:'',part:'',stack:[],desc:'',
-   moons:[{id:'linfox-role-1',name:'Role one'},{id:'linfox-role-2',name:'Role two'}]},
- {id:'diverse-tech-lab',name:'Diverse Tech Lab',lane:'career',size:1,type:2,pal:[0x1d6b6b,0xb89a5a,0xf1efe8],what:'Development intern in a small, close-knit team',when:'2021, six months',part:'Intern',stack:[],
-   desc:'Worked alongside and independently in each team member’s role, across a wide range of technologies.'},
+ {id:'contact',name:'Contact',lane:'sun',what:'Felipe Ortiz. Cloud and Platform Engineer.',when:'',part:'',stack:[],desc:'Hands-on with troubleshooting, infrastructure as code and multi-OS environments. Passionate about automation, continuous improvement and the people on the other end of the work.'},
+ {id:'linfox',name:'Linfox',lane:'career',size:3,type:2,pal:[0x1f5f8b,0x6b8f4e,0xf1efe8],what:'Cloud and Platform Engineer',when:'2022 to present',part:'',stack:['AWS','Azure','Ansible','PowerShell','Terraform'],
+   desc:'Joined through the graduate program and moved into cloud and platform engineering: hybrid infrastructure across on-premises, Azure and AWS, with a focus on automation, security tooling and documentation that lets new people support themselves.',
+   moons:[{id:'linfox-cloud-platform',name:'Cloud and Platform Engineer',what:'Hybrid infrastructure across on-premises, Azure and AWS',when:'2024 to present',stack:['AWS','Azure','Ansible','PowerShell','VMware'],
+     desc:'Hybrid infrastructure management. Defensive security tooling, privileged access management, role-based access and east-west segmentation. Infrastructure as code with Ansible, PowerShell, VMware and AWS. Identity administration across Active Directory and Entra ID. Process design and training documentation for zero-experience onboarding and self-service support.'},
+    {id:'linfox-graduate',name:'Graduate Program',what:'Rotations from warehouse operations to data engineering and cloud',when:'2022 to 2024',stack:['Snowflake','dbt','Airflow','Python','Terraform'],
+     desc:'Rotations through warehouse operations, transport logistics, warehouse systems development, integration, data engineering and analytics, and cloud and platform engineering. Automated data flattening and consumption, ran vendor API proofs of concept and training, helped refine an internal LLM for data analysis, and worked on electronic runsheets.'}]},
+ {id:'diverse-tech-lab',name:'Diverse Tech Lab',lane:'career',size:1,type:2,pal:[0x1d6b6b,0xb89a5a,0xf1efe8],what:'Full-stack development intern, remote',when:'2021 to 2022',part:'',stack:['Vue.js','React','.NET','Express','Postgres'],
+   desc:'A small business where I took on several roles at once. UI and UX design and prototyping, mainly in Adobe XD. Full-stack web development with Vue.js, React and Bulma, .NET and Express APIs, Postgres databases and AWS hosting.'},
  {id:'wedding-suite',name:'Wedding suite',lane:'projects',size:2,type:1,pal:[0xc98a7a,0xf0d2b0,0x8a4a5a],ring:true,what:'Complete wedding website and digital invitation suite',when:'Live',part:'Solo build',stack:['Next.js','Cloudinary','Directus','Handlebars','fly.io'],
    desc:'Everything about a wedding that could be digitised: a Next.js site with a Cloudinary-backed guest photo gallery, templated digital invitations, and a Directus guest-list back end a non-technical partner can run.',
    moons:[{id:'wedding-gallery',name:'Gallery site'},{id:'wedding-invites',name:'Invitations'},{id:'wedding-guestlist',name:'Guest list'}]},
@@ -128,7 +132,7 @@ const B = [
  {id:'poe2buildlint',name:'PoE2BuildLint',lane:'belt',what:'One line to be supplied',when:'2026',part:'Solo build',stack:['TypeScript'],desc:''},
 ];
 // moons become entries of their own
-for (const b of [...B]) for (const m of b.moons||[]) B.push(Object.assign(m,{lane:b.lane,parent:b.id,what:'Part of '+b.name,when:'',part:b.part,stack:[],desc:''}));
+for (const b of [...B]) for (const m of b.moons||[]) B.push(Object.assign(m,{lane:b.lane,parent:b.id,what:'Part of '+b.name,when:'',part:b.part,stack:[],desc:'',...m}));
 const byId = Object.fromEntries(B.map(b=>[b.id,b]));
 
 function entryHTML(b, closable){
@@ -138,7 +142,7 @@ function entryHTML(b, closable){
    <label>Message<br><textarea name="m" rows="4" style="width:100%"></textarea></label><button class="btn" style="justify-self:start">Send message</button><p role="status" data-status></p></form>`;
   return `${closable?'<button class="x" data-close>Close</button>':''}<div class="media"><div class="shot">Image 1 of 3</div><div class="dots" aria-hidden="true">&#9679;&#9675;&#9675;</div></div><div class="facts">
    <h2>${b.name}</h2><p>${b.what}</p>
-   <dl>${row('When',b.when)}${row('My part',b.part)}${row('Outcome','')}${row('Proof','')}</dl>
+   <dl>${row('When',b.when)}${b.lane==='career'?row('Achievements',''):row('My part',b.part)+row('Outcome','')+row('Proof','')}</dl>
    ${b.stack.length?`<ul class="tags">${b.stack.map(s=>`<li>${s}</li>`).join('')}</ul>`:`<p>${TODO} <span style="color:var(--dim)">(stack)</span></p>`}
    <h3>Description</h3><p>${b.desc||TODO}</p><h3>Highlights</h3><p>${TODO}</p></div>`;
 }
