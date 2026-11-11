@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Portfolio system map prototype</title>
+<!-- Throwaway prototype: answers "does a procedural Outer Wilds-style map look good enough?"
+     Single file, no build. The real site (Astro + content files) replaces this. -->
+<style>
+:root{--bg:#04060a;--ink:#e8e6dc;--dim:#9a988f;--line:#3a4152;--panel:rgba(10,14,20,.86);--green:#6fd68a;
+--mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:"Gill Sans","Gill Sans MT",Seravek,"Trebuchet MS",system-ui,sans-serif}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:15px/1.5 var(--sans);overflow:hidden}
+canvas{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;padding:0}
+button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+#labels{position:fixed;inset:0;pointer-events:none}
+.lab{position:absolute;transform:translate(14px,-50%);font:12px var(--mono);letter-spacing:.08em;text-transform:uppercase;
+  white-space:nowrap;pointer-events:auto;padding:6px 4px;text-shadow:0 0 6px #000,0 0 2px #000}
+.lab.small{color:var(--dim);font-size:11px}
+.lab:hover{color:#fff}
+#brk{position:fixed;pointer-events:none;display:none}
+#top{position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:14px 18px;pointer-events:none;z-index:5}
+#crumb{font:12px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--dim);pointer-events:auto}
+#crumb button{text-transform:uppercase;letter-spacing:.08em;text-decoration:underline;text-underline-offset:3px}
+#toggle{display:flex;gap:6px;pointer-events:auto}
+#toggle button{white-space:nowrap;padding:6px 12px;border:1px solid var(--line);border-radius:4px;color:var(--dim);background:rgba(4,6,10,.6)}
+#toggle button[aria-pressed=true]{color:var(--ink);border-color:#b4b2a9}
+#hints{position:fixed;right:18px;bottom:14px;text-align:right;color:var(--dim);font-size:14px;line-height:1.7;pointer-events:none}
+#card{position:fixed;width:min(300px,calc(100vw - 24px));background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px 16px;display:none;z-index:3}
+#card h2,.entry h2{font:500 15px var(--mono);letter-spacing:.08em;text-transform:uppercase;margin:0 0 4px}
+#card p{margin:0 0 8px;color:var(--dim);font-size:14px}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px;padding:0;list-style:none}
+.tags li{font:11px var(--mono);border:1px solid var(--line);border-radius:3px;padding:2px 6px;color:#fac775}
+.btn{padding:6px 12px;border:1px solid #b4b2a9;border-radius:4px;font-size:14px}
+.btn:hover{background:rgba(255,255,255,.08)}
+#entry{position:fixed;left:18px;top:56px;bottom:18px;width:min(420px,calc(100vw - 36px));background:var(--panel);border:1px solid var(--line);
+  border-radius:6px;padding:16px;overflow:auto;display:none;z-index:4}
+.entry .shot{aspect-ratio:16/10;border:1px dashed var(--line);border-radius:4px;display:grid;place-items:center;color:var(--dim);font:12px var(--mono);margin-bottom:6px;
+  background:repeating-linear-gradient(45deg,rgba(255,255,255,.03) 0 10px,transparent 10px 20px)}
+.entry .dots{text-align:center;color:var(--dim);letter-spacing:.4em;margin-bottom:12px}
+.entry dl{display:grid;grid-template-columns:92px 1fr;gap:4px 12px;margin:10px 0 14px;font-size:14px}
+.entry dt{color:var(--dim)} .entry dd{margin:0}
+.entry h3{font:500 12px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin:14px 0 4px}
+.entry p{margin:0 0 10px;font-size:14px}
+.entry .todo{color:#f0997b}
+.entry form{display:grid;gap:8px}
+.entry input,.entry textarea{font:inherit;color:var(--ink);background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:4px;padding:8px}
+.x{float:right;color:var(--dim);font-size:14px;padding:2px 6px}
+/* log view: Outer Wilds ship log, Map Mode */
+#log{position:fixed;inset:0;display:none;grid-template-columns:240px 1fr;grid-template-rows:auto 190px 1fr;gap:0;padding:56px 18px 18px;z-index:2;
+  background:#07111c;background-image:linear-gradient(rgba(120,170,220,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(120,170,220,.07) 1px,transparent 1px);background-size:32px 32px}
+#log h1{grid-column:1/3;font:500 22px var(--mono);letter-spacing:.06em;color:var(--green);margin:0 0 10px;padding:6px 10px;border:1px solid rgba(120,170,220,.35)}
+#nav{grid-row:2/4;overflow:auto;border:1px solid rgba(120,170,220,.35);border-top:0;padding:8px 0}
+#nav h2{font:500 11px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin:10px 12px 2px}
+#nav button{display:block;width:100%;text-align:left;padding:5px 12px;font-size:14px}
+#nav button.moon{padding-left:28px;color:var(--dim)}
+#nav button[aria-current=true]{background:rgba(111,214,138,.14);color:#fff}
+#lineup{display:flex;align-items:center;gap:22px;overflow-x:auto;padding:0 18px;border:1px solid rgba(120,170,220,.35);border-top:0;border-left:0}
+#lineup button{flex:none;border-radius:50%;border:2px solid transparent}
+#lineup button[aria-current=true]{border-color:#bfe6ff;box-shadow:0 0 0 3px rgba(191,230,255,.25)}
+#logentry{overflow:auto;padding:16px;border:1px solid rgba(120,170,220,.35);border-top:0;border-left:0}
+#logentry .entry{max-width:900px;display:grid;grid-template-columns:minmax(180px,320px) minmax(0,1fr);gap:20px}
+#logentry .entry>:only-child,#logentry .entry>form,#logentry .entry>h2,#logentry .entry>p{grid-column:1/3}
+@media (max-width:700px){
+  #log{grid-template-columns:1fr;grid-template-rows:auto 120px auto 1fr}
+  #log h1{grid-column:1} #nav{grid-row:3;max-height:30vh;border-top:1px solid rgba(120,170,220,.35)} #lineup,#logentry{border-left:1px solid rgba(120,170,220,.35)}
+  #hints{display:none}
+  #logentry .entry{grid-template-columns:1fr}#logentry .entry>*{grid-column:1!important}
+  #card{left:12px!important;top:auto!important;bottom:12px}
+}
+</style>
+</head>
+<body>
+<canvas id="c" aria-hidden="true"></canvas>
+<div id="labels"></div>
+<svg id="brk" viewBox="0 0 100 100" aria-hidden="true"><g fill="none" stroke="#b4b2a9" stroke-width="1.6" stroke-linecap="round">
+<path d="M7 25A50 50 0 0 1 25 7"/><path d="M75 7A50 50 0 0 1 93 25"/><path d="M93 75A50 50 0 0 1 75 93"/><path d="M25 93A50 50 0 0 1 7 75"/></g></svg>
+<header id="top"><nav id="crumb" aria-label="Location"></nav>
+<div id="toggle" role="group" aria-label="View"><button id="t3d" aria-pressed="true">3D map</button><button id="tlog" aria-pressed="false">Log</button></div></header>
+<aside id="card" aria-live="polite"></aside>
+<section id="entry" class="entry" aria-label="Entry"></section>
+<div id="hints">Drag to rotate<br>Scroll or pinch to zoom<br>Esc to go back</div>
+<main id="log"><h1 id="logtitle"></h1><nav id="nav" aria-label="Planets and categories"></nav><div id="lineup" aria-label="System line-up"></div><div id="logentry"></div></main>
+
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.js"}}</script>
+<script type="module">
+import * as THREE from 'three';
+THREE.ColorManagement.enabled = false;
+
+/* ---------- content (stands in for one Markdown file per entry) ---------- */
+const TODO = '<span class="todo">To be supplied</span>';
+const LANES = {
+  sun:{name:'Contact'}, career:{name:'Career',tint:0xfac775}, projects:{name:'Projects',tint:0x9fe1cb},
+  games:{name:'Games',tint:0xcecbf6}, belt:{name:'Asteroid belt',tint:0x888780}
+};
+// type: 0 rocky, 1 gas, 2 ocean, 3 lava, 4 ice.  size: 1 small, 2 medium, 3 large
+const B = [
+ {id:'contact',name:'Contact',lane:'sun',what:'Developer based in Sydney. Say hello.',when:'',part:'',stack:[],desc:'A three-line pitch and the top skills, computed from the entries, will sit here.'},
+ {id:'linfox',name:'Linfox',lane:'career',size:3,type:2,pal:[0x1f5f8b,0x6b8f4e,0xf1efe8],what:'Role and years, one line',when:'',part:'',stack:[],desc:'',
+   moons:[{id:'linfox-role-1',name:'Role one'},{id:'linfox-role-2',name:'Role two'}]},
+ {id:'diverse-tech-lab',name:'Diverse Tech Lab',lane:'career',size:1,type:0,pal:[0x7a5a3a,0xc9a26b,0x4a3a2a],what:'Development intern in a small, close-knit team',when:'2021, six months',part:'Intern',stack:[],
+   desc:'Worked alongside and independently in each team member’s role, across a wide range of technologies.'},
+ {id:'wedding-suite',name:'Wedding suite',lane:'projects',size:2,type:1,pal:[0xc98a7a,0xf0d2b0,0x8a4a5a],ring:true,what:'Complete wedding website and digital invitation suite',when:'Live',part:'Solo build',stack:['Next.js','Cloudinary','Directus','Handlebars','fly.io'],
+   desc:'Everything about a wedding that could be digitised: a Next.js site with a Cloudinary-backed guest photo gallery, templated digital invitations, and a Directus guest-list back end a non-technical partner can run.',
+   moons:[{id:'wedding-gallery',name:'Gallery site'},{id:'wedding-invites',name:'Invitations'},{id:'wedding-guestlist',name:'Guest list'}]},
+ {id:'zanitee',name:'Zanitee',lane:'projects',size:2,type:4,pal:[0x8fd0e8,0xe8f6fb,0x4a90b8],what:'Gift suggestion and cataloguing web application',when:'',part:'Solo build',stack:[],desc:''},
+ {id:'obs-chat',name:'OBS Chat',lane:'projects',size:1,type:0,pal:[0x5a4a8a,0x9a8ad0,0x2a2440],what:'Merges Twitch and Kick live chat into one OBS panel',when:'2025',part:'Solo build',stack:['JavaScript','OBS','Webhooks','REST APIs'],
+   desc:'Built during the rise of multi-platform streaming. Links a Twitch API listener and a Kick webhook subscription into one live, legible chat for the streamer.'},
+ {id:'nominate-bot',name:'Nominate Bot',lane:'projects',size:1,type:0,pal:[0x3c6e5a,0x7fc8a9,0x1e3a30],what:'Discord bot that lets a server govern itself by vote',when:'',part:'Solo build',stack:['Node.js','Discord','Docker','fly.io'],
+   desc:'Democratic ranking and voting for a server hierarchy, plus thread management for looking-for-group chats and a universal timestamp command.'},
+ {id:'portfolio',name:'Portfolio',lane:'projects',size:1,type:4,pal:[0x9aa7b8,0xdfe6ee,0x5a6a7c],what:'This site: a solar system an agent keeps up to date',when:'In progress',part:'Solo build',stack:['three.js'],desc:'One content file per entry; the planet is generated from it.'},
+ {id:'roulette',name:'Roulette',lane:'games',size:2,type:3,pal:[0x1a1210,0xff6a2a,0x000000],what:'Multiplayer Russian Roulette game with party and ranked modes',when:'In progress',part:'Solo build',stack:['Unreal Engine','Multiplayer'],
+   desc:'First-person, proximity voice. Party mode for up to six friends and a single-life ranked mode that forms a king-of-the-hill leaderboard.'},
+ {id:'roguelike',name:'Roguelike',lane:'games',size:2,type:1,pal:[0x7a2f4a,0xe08a6a,0x3a1626],what:'Hades-style isometric action roguelike',when:'In progress',part:'Solo build',stack:['Unity','C#'],
+   desc:'Movement and dash, a combat engine with hit-stop and combos, state-machine enemy AI and a partly built upgrade system.'},
+ {id:'wagent',name:'Wagent',lane:'games',size:1,type:0,pal:[0x8a6a2a,0xe0c070,0x4a3a16],what:'In-game AI chat sidebar for World of Warcraft',when:'In progress',part:'Solo build',stack:['Lua'],desc:''},
+ {id:'breaking-captcha',name:'Breaking CAPTCHA',lane:'belt',what:'Text and audio CAPTCHA research, university capstone',when:'2022',part:'Small group project',stack:['Python','Machine learning'],desc:''},
+ {id:'fudget',name:'Fudget',lane:'belt',what:'Mobile-friendly household budget rebuilt from a spreadsheet',when:'Not complete',part:'Solo build',stack:['JavaScript'],desc:''},
+ {id:'imagepathcolorpicker',name:'Color picker',lane:'belt',what:'npm package that returns the main colour of an image',when:'2023',part:'Solo build',stack:['JavaScript','npm'],desc:''},
+ {id:'hexagon-pattern',name:'Hexagon pattern',lane:'belt',what:'npm package that builds hexagon patterns from a folder of images',when:'',part:'Solo build',stack:['JavaScript','npm'],desc:''},
+ {id:'poe2buildlint',name:'PoE2BuildLint',lane:'belt',what:'One line to be supplied',when:'2026',part:'Solo build',stack:['TypeScript'],desc:''},
+];
+// moons become entries of their own
+for (const b of [...B]) for (const m of b.moons||[]) B.push(Object.assign(m,{lane:b.lane,parent:b.id,what:'Part of '+b.name,when:'',part:b.part,stack:[],desc:''}));
+const byId = Object.fromEntries(B.map(b=>[b.id,b]));
+
+function entryHTML(b, closable){
+  const row=(k,v)=>`<dt>${k}</dt><dd>${v||TODO}</dd>`;
+  if (b.lane==='sun') return `${closable?'<button class="x" data-close>Close</button>':''}<h2>Contact</h2><p>${b.what}</p><p>${b.desc}</p>
+   <form><label>Your name<br><input name="n" autocomplete="name" style="width:100%"></label><label>Email<br><input name="e" type="email" autocomplete="email" style="width:100%"></label>
+   <label>Message<br><textarea name="m" rows="4" style="width:100%"></textarea></label><button class="btn" style="justify-self:start">Send message</button><p role="status" data-status></p></form>`;
+  return `${closable?'<button class="x" data-close>Close</button>':''}<div class="media"><div class="shot">Image 1 of 3</div><div class="dots" aria-hidden="true">&#9679;&#9675;&#9675;</div></div><div class="facts">
+   <h2>${b.name}</h2><p>${b.what}</p>
+   <dl>${row('When',b.when)}${row('My part',b.part)}${row('Outcome','')}${row('Proof','')}</dl>
+   ${b.stack.length?`<ul class="tags">${b.stack.map(s=>`<li>${s}</li>`).join('')}</ul>`:`<p>${TODO} <span style="color:var(--dim)">(stack)</span></p>`}
+   <h3>Description</h3><p>${b.desc||TODO}</p><h3>Highlights</h3><p>${TODO}</p></div>`;
+}
+
+/* ---------- scene ---------- */
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({canvas,antialias:true});
+renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(42,1,.1,3000);
+const rgb = h => new THREE.Vector3((h>>16&255)/255,(h>>8&255)/255,(h&255)/255);
+
+const NOISE = `
+float hash(vec3 p){return fract(sin(dot(p,vec3(127.1,311.7,74.7)))*43758.5453);}
+float vnoise(vec3 x){vec3 i=floor(x),f=fract(x);f=f*f*(3.-2.*f);
+ return mix(mix(mix(hash(i),hash(i+vec3(1,0,0)),f.x),mix(hash(i+vec3(0,1,0)),hash(i+vec3(1,1,0)),f.x),f.y),
+            mix(mix(hash(i+vec3(0,0,1)),hash(i+vec3(1,0,1)),f.x),mix(hash(i+vec3(0,1,1)),hash(i+vec3(1,1,1)),f.x),f.y),f.z);}
+float fbm(vec3 p){float a=.5,s=0.;for(int i=0;i<5;i++){s+=a*vnoise(p);p=p*2.03+7.1;a*=.5;}return s;}`;
+const VERT = `varying vec3 vO;varying vec3 vW;varying vec3 vN;
+void main(){vO=normalize(position);vec4 w=modelMatrix*vec4(position,1.);vW=w.xyz;vN=normalize(mat3(modelMatrix)*normal);gl_Position=projectionMatrix*viewMatrix*w;}`;
+const PLANET = NOISE+`uniform vec3 A;uniform vec3 Bc;uniform vec3 C;uniform int T;uniform float S;varying vec3 vO;varying vec3 vW;varying vec3 vN;
+void main(){vec3 p=vO+vec3(S,S*1.7,S*.3);float n=fbm(p*2.4);vec3 col;float glow=0.;
+ if(T==0){col=mix(A,Bc,smoothstep(.38,.62,n));col=mix(col,C,smoothstep(.55,.7,fbm(p*7.))*.7);}
+ else if(T==1){float b=vO.y*7.+fbm(p*1.6)*2.2;col=mix(A,Bc,.5+.5*sin(b));col=mix(col,C,smoothstep(.55,.8,fbm(vec3(p.x*2.,p.y*11.,p.z*2.)))*.6);}
+ else if(T==2){float land=smoothstep(.5,.53,n);col=mix(A*(.7+.6*n),Bc*(.6+.8*fbm(p*6.)),land);
+   col=mix(col,C,smoothstep(.86,.93,abs(vO.y)+n*.2));col=mix(col,vec3(1.),smoothstep(.58,.75,fbm(p*3.+11.))*.55);}
+ else if(T==3){float cr=1.-smoothstep(0.,.07,abs(n-.5));col=mix(A+.08*fbm(p*9.),Bc,cr);glow=cr;}
+ else{col=mix(A,Bc,smoothstep(.3,.7,n));col=mix(col,C,smoothstep(.6,.62,fbm(vec3(p.x*9.,p.y*1.5,p.z*9.)))*.5);}
+ vec3 L=normalize(-vW),V=normalize(cameraPosition-vW);float d=smoothstep(-.15,.75,dot(vN,L));
+ float rim=pow(1.-max(dot(vN,V),0.),2.5);
+ vec3 o=col*(.12+d)+glow*Bc*.9+rim*mix(Bc,vec3(.6,.8,1.),.5)*(.15+.6*d);
+ gl_FragColor=vec4(o,1.);}`;
+const SUN = NOISE+`uniform float t;varying vec3 vO;varying vec3 vW;varying vec3 vN;
+void main(){float n=fbm(vO*3.+vec3(0.,t*.04,t*.02));float m=fbm(vO*9.-t*.03);vec3 V=normalize(cameraPosition-vW);
+ vec3 col=mix(vec3(1.,.22,0.),vec3(1.,.62,.08),smoothstep(.35,.7,n));col=mix(col,vec3(1.,.9,.5),smoothstep(.62,.8,m)*.6);
+ col*=.75+.45*pow(max(dot(vN,V),0.),.6);gl_FragColor=vec4(col,1.);}`;
+
+const sphere = new THREE.SphereGeometry(1,48,32);
+// stars
+{const n=2600,pos=new Float32Array(n*3),col=new Float32Array(n*3);
+ for(let i=0;i<n;i++){const v=new THREE.Vector3().randomDirection().multiplyScalar(1400);pos.set([v.x,v.y,v.z],i*3);const k=.35+Math.random()*.65,w=Math.random();col.set([k*(w>.9?1:.9),k*.92,k*(w<.1?1:.88)],i*3);}
+ const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(pos,3));g.setAttribute('color',new THREE.BufferAttribute(col,3));
+ scene.add(new THREE.Points(g,new THREE.PointsMaterial({size:1.6,sizeAttenuation:false,vertexColors:true})));}
+// sun
+const sun = byId.contact; sun.r=3.2; sun.group=new THREE.Group(); scene.add(sun.group);
+const sunMat=new THREE.ShaderMaterial({vertexShader:VERT,fragmentShader:SUN,uniforms:{t:{value:0}}});
+sun.mesh=new THREE.Mesh(sphere,sunMat); sun.mesh.scale.setScalar(sun.r); sun.mesh.userData.b=sun; sun.group.add(sun.mesh);
+{const cv=document.createElement('canvas');cv.width=cv.height=256;const x=cv.getContext('2d'),g=x.createRadialGradient(128,128,20,128,128,128);
+ g.addColorStop(0,'rgba(255,120,30,.8)');g.addColorStop(.45,'rgba(255,70,10,.22)');g.addColorStop(1,'rgba(255,40,0,0)');x.fillStyle=g;x.fillRect(0,0,256,256);
+ const s=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(cv),blending:THREE.AdditiveBlending,depthWrite:false}));s.scale.setScalar(sun.r*3.6);scene.add(s);}
+
+const pick=[sun.mesh];
+function planetMat(b){return new THREE.ShaderMaterial({vertexShader:VERT,fragmentShader:PLANET,
+  uniforms:{A:{value:rgb(b.pal[0])},Bc:{value:rgb(b.pal[1])},C:{value:rgb(b.pal[2])},T:{value:b.type},S:{value:b.seed}}});}
+function orbitLine(r,color,op,seg=256){const pts=[];for(let i=0;i<=seg;i++){const a=i/seg*Math.PI*2;pts.push(new THREE.Vector3(Math.cos(a)*r,0,Math.sin(a)*r));}
+  return new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color,transparent:true,opacity:op}));}
+// deterministic pseudo-random from the id: same data, same system
+const rnd = s => {let h=2166136261;for(const c of s)h=Math.imul(h^c.charCodeAt(0),16777619);return ()=>((h=Math.imul(h^h>>>15,2246822507)^Math.imul(h^h>>>13,3266489909))>>>0)/4294967296;};
+
+const planets=B.filter(b=>!b.parent&&b.lane!=='sun'&&b.lane!=='belt');
+planets.forEach((b,i)=>{
+  const R=rnd(b.id); b.seed=R()*50; b.r=[.55,.95,1.4][b.size-1]; b.a=10+i*3.4; b.ang=R()*Math.PI*2; b.speed=.9/Math.pow(b.a,1.5);
+  const tint=new THREE.Color(LANES[b.lane].tint).offsetHSL((R()-.5)*.06,0,(R()-.5)*.1);
+  scene.add(orbitLine(b.a,tint,.55));
+  b.group=new THREE.Group(); scene.add(b.group);
+  b.mesh=new THREE.Mesh(sphere,planetMat(b)); b.mesh.scale.setScalar(b.r); b.mesh.rotation.z=(R()-.5)*.6; b.mesh.userData.b=b; b.group.add(b.mesh); pick.push(b.mesh);
+  if(b.ring){const rg=new THREE.Mesh(new THREE.RingGeometry(b.r*1.45,b.r*2.1,64),new THREE.MeshBasicMaterial({color:b.pal[1],transparent:true,opacity:.35,side:THREE.DoubleSide}));rg.rotation.x=Math.PI/2-.35;b.group.add(rg);}
+  (b.moons||[]).forEach((m,j)=>{m.r=b.r*.22;m.a=b.r*(2.4+j*.7);m.ang=R()*6.28;m.speed=.25/(j+1);m.seed=R()*50;m.type=0;m.pal=[0x777570,0xb4b2a9,0x444441];
+    b.group.add(orbitLine(m.a,0xffffff,.18,96));
+    m.mesh=new THREE.Mesh(sphere,planetMat(m));m.mesh.scale.setScalar(m.r);m.mesh.userData.b=m;b.group.add(m.mesh);pick.push(m.mesh);});
+});
+// asteroid belt
+const beltR=10+planets.length*3.4+4, belt=new THREE.Group(); scene.add(belt);
+{const n=420,im=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1,0),new THREE.MeshBasicMaterial(),n),d=new THREE.Object3D(),R=rnd('belt'),c=new THREE.Color();
+ for(let i=0;i<n;i++){const a=R()*6.283,r=beltR+(R()-.5)*4;d.position.set(Math.cos(a)*r,(R()-.5)*.8,Math.sin(a)*r);d.rotation.set(R()*6,R()*6,R()*6);d.scale.setScalar(.05+R()*.14);d.updateMatrix();im.setMatrixAt(i,d.matrix);
+  im.setColorAt(i,c.setScalar(.22+R()*.3));}
+ belt.add(im);}
+B.filter(b=>b.lane==='belt').forEach((b,i,all)=>{const R=rnd(b.id);b.seed=R()*50;b.r=.34;b.type=0;b.pal=[0x5f5e5a,0x9a988f,0x2c2c2a];b.ang=i/all.length*6.283+.6;b.a=beltR+(R()-.5)*2;
+  b.group=new THREE.Group();b.group.position.set(Math.cos(b.ang)*b.a,0,Math.sin(b.ang)*b.a);belt.add(b.group);
+  b.mesh=new THREE.Mesh(new THREE.IcosahedronGeometry(1,1),planetMat(b));b.mesh.scale.set(b.r,b.r*.75,b.r*.85);b.mesh.userData.b=b;b.group.add(b.mesh);pick.push(b.mesh);});
+// focus grid
+const grid=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.ShaderMaterial({transparent:true,depthWrite:false,side:THREE.DoubleSide,uniforms:{o:{value:0}},
+  vertexShader:`varying vec2 u;void main(){u=uv-.5;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
+  fragmentShader:`varying vec2 u;uniform float o;void main(){vec2 g=abs(fract(u*36.)-.5);vec2 w=fwidth(u*36.);float l=1.-min(smoothstep(0.,w.x*1.5,g.x),smoothstep(0.,w.y*1.5,g.y));
+   float f=smoothstep(.5,.12,length(u));gl_FragColor=vec4(.75,.85,.9,l*f*.3*o);}`}));
+grid.rotation.x=-Math.PI/2; scene.add(grid);
+
+/* ---------- labels ---------- */
+const labels=document.getElementById('labels');
+for(const b of B){const el=document.createElement('button');el.className='lab'+(b.parent||b.lane==='belt'?' small':'');el.textContent=b.name;el.onclick=()=>select(b.id);labels.append(el);b.label=el;}
+
+/* ---------- state, camera, input ---------- */
+let sel=null, open=false, view='3d';
+const cam={yaw:.9,pitch:.5,dist:95,gDist:95,target:new THREE.Vector3()};
+const SYS=95, wp=new THREE.Vector3(), v=new THREE.Vector3();
+const focusDist=b=>b.lane==='sun'?b.r*6:b.parent?b.r*14:b.lane==='belt'?b.r*16:b.r*(b.moons?9:7);
+function select(id,fromHash){
+  sel=id&&byId[id]?byId[id]:null; open=false; cam.gDist=(sel?focusDist(sel):SYS)*Math.max(1,1.15/camera.aspect);
+  if(!fromHash){try{history.replaceState(null,'',sel?'#'+sel.id:location.pathname+location.search)}catch(e){location.hash=sel?sel.id:''}}
+  render();
+}
+const $=id=>document.getElementById(id);
+function render(){
+  const lane=sel&&LANES[sel.lane].name, par=sel&&sel.parent&&byId[sel.parent];
+  $('crumb').innerHTML=sel?`<button data-go="">System</button> / ${lane}${par?` / <button data-go="${par.id}">${par.name}</button>`:''} / ${sel.name}`:'System';
+  $('t3d').setAttribute('aria-pressed',view==='3d');$('tlog').setAttribute('aria-pressed',view==='log');
+  const is3d=view==='3d';
+  $('log').style.display=is3d?'none':'grid';labels.style.display=is3d?'':'none';$('hints').style.visibility=is3d?'':'hidden';
+  $('card').style.display=is3d&&sel&&!open?'block':'none';$('entry').style.display=is3d&&sel&&open?'block':'none';
+  if(sel){$('card').innerHTML=`<h2>${sel.name}</h2><p>${sel.what}</p>${sel.when?`<p>${sel.when}${sel.part?' · '+sel.part:''}</p>`:''}
+     ${sel.stack.length?`<ul class="tags">${sel.stack.slice(0,5).map(s=>`<li>${s}</li>`).join('')}</ul>`:''}<button class="btn" data-open>${sel.lane==='sun'?'Open contact form':'Open entry'}</button>`;
+    $('entry').innerHTML=entryHTML(sel,true);}
+  if(!is3d){const cur=sel||sun;$('logtitle').textContent=cur.name;
+    $('nav').innerHTML=Object.entries(LANES).map(([k,l])=>`<h2>${l.name}</h2>`+B.filter(b=>b.lane===k&&!b.parent).map(b=>
+      `<button data-go="${b.id}" aria-current="${cur===b}">${b.name}</button>`+(b.moons||[]).map(m=>`<button class="moon" data-go="${m.id}" aria-current="${cur===m}">${m.name}</button>`).join('')).join('')).join('');
+    const hex=h=>'#'+h.toString(16).padStart(6,'0');
+    $('lineup').innerHTML=B.filter(b=>!b.parent).map(b=>{const s=b.lane==='sun'?110:b.lane==='belt'?12:[26,40,58][b.size-1],c=b.lane==='sun'?'radial-gradient(#ffb020,#ff3a00)':`radial-gradient(circle at 35% 30%,${hex(b.pal[1])},${hex(b.pal[0])})`;
+      return `<button data-go="${b.id}" aria-label="${b.name}" aria-current="${cur===b||cur.parent===b.id}" style="width:${s}px;height:${s}px;background:${c}"></button>`}).join('');
+    $('logentry').innerHTML=`<div class="entry">${entryHTML(cur,false)}</div>`;}
+}
+document.addEventListener('click',e=>{const t=e.target.closest('[data-go],[data-open],[data-close]');if(!t)return;
+  if(t.dataset.go!==undefined)select(t.dataset.go||null);else if('open' in t.dataset){open=true;render();$('entry').querySelector('button').focus();}else{open=false;render();}});
+document.addEventListener('submit',e=>{e.preventDefault();const s=e.target.querySelector('[data-status]');if(s)s.textContent='Prototype only: nothing was sent.';});
+$('t3d').onclick=()=>{view='3d';render()};$('tlog').onclick=()=>{view='log';render()};
+addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(open){open=false;render()}else if(sel)select(sel.parent||null)});
+addEventListener('hashchange',()=>select(location.hash.slice(1)||null,true));
+
+const ptrs=new Map();let moved=0,pinch=0;
+canvas.addEventListener('pointerdown',e=>{canvas.setPointerCapture(e.pointerId);ptrs.set(e.pointerId,e);moved=0;pinch=0});
+canvas.addEventListener('pointermove',e=>{const p=ptrs.get(e.pointerId);if(!p)return;
+  if(ptrs.size===1){cam.yaw+=(e.clientX-p.clientX)*.005;cam.pitch=Math.min(1.45,Math.max(.06,cam.pitch+(e.clientY-p.clientY)*.004));moved+=Math.abs(e.clientX-p.clientX)+Math.abs(e.clientY-p.clientY);}
+  ptrs.set(e.pointerId,e);
+  if(ptrs.size===2){const[a,b]=[...ptrs.values()],d=Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);if(pinch)zoom(pinch/d);pinch=d;moved=99;}});
+const up=e=>{if(ptrs.delete(e.pointerId)&&moved<5&&e.type==='pointerup'){const r=canvas.getBoundingClientRect();
+  v.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1,0);const rc=new THREE.Raycaster();rc.setFromCamera(v,camera);const h=rc.intersectObjects(pick)[0];if(h)select(h.object.userData.b.id);}};
+canvas.addEventListener('pointerup',up);canvas.addEventListener('pointercancel',up);
+function zoom(f){cam.gDist=Math.min(260,Math.max(sel?sel.r*2.6:14,cam.gDist*f));}
+canvas.addEventListener('wheel',e=>{e.preventDefault();zoom(Math.exp(e.deltaY*.0012))},{passive:false});
+
+function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
+addEventListener('resize',resize);resize();
+
+/* ---------- loop ---------- */
+let last=performance.now(),gridO=0;
+function frame(now){
+  const dt=Math.min(.05,(now-last)/1000);last=now;
+  if(view==='3d'){
+    const drift=reduced?0:dt; sunMat.uniforms.t.value+=drift;
+    for(const b of planets){b.ang+=b.speed*drift*.35;b.group.position.set(Math.cos(b.ang)*b.a,0,Math.sin(b.ang)*b.a);b.mesh.rotation.y+=drift*.05;
+      for(const m of b.moons||[]){m.ang+=m.speed*drift;m.mesh.position.set(Math.cos(m.ang)*m.a,0,Math.sin(m.ang)*m.a);}}
+    belt.rotation.y-=drift*.0012;
+    const k=reduced?1:1-Math.exp(-dt*4.5);
+    if(sel)sel.mesh.getWorldPosition(wp);else wp.set(0,0,0);
+    cam.target.lerp(wp,k);cam.dist+=(cam.gDist-cam.dist)*k;
+    camera.position.set(Math.cos(cam.pitch)*Math.sin(cam.yaw),Math.sin(cam.pitch),Math.cos(cam.pitch)*Math.cos(cam.yaw)).multiplyScalar(cam.dist).add(cam.target);
+    camera.lookAt(cam.target);camera.updateMatrixWorld();
+    const showGrid=sel&&sel.lane!=='sun';gridO+=((showGrid?1:0)-gridO)*k;grid.material.uniforms.o.value=gridO;
+    if(showGrid){const s=sel.r*26;grid.scale.setScalar(s);grid.position.copy(wp).setY(-sel.r*1.25);}
+    renderer.render(scene,camera);
+    // labels, brackets, card
+    const W=innerWidth,H=innerHeight,f=H/2/Math.tan(camera.fov*Math.PI/360);
+    for(const b of B){b.mesh.getWorldPosition(v);const d=v.distanceTo(camera.position);v.project(camera);
+      const x=(v.x+1)/2*W,y=(1-v.y)/2*H,pr=b.r*f/d;b.sx=x;b.sy=y;b.pr=pr;
+      const vis=v.z<1&&(!b.parent||(sel&&(sel.id===b.parent||sel.parent===b.parent)))&&!(open&&x<460)&&!(y<56&&x>W-260)&&(b.lane!=='belt'||cam.dist<SYS*1.6);
+      b.label.style.display=vis?'':'none';if(vis)b.label.style.transform=`translate(${x+Math.max(8,pr+6)}px,${y}px) translate(0,-50%)`;}
+    const brk=$('brk');
+    if(sel){const s=Math.max(54,sel.pr*2.7);brk.style.display='block';brk.style.width=brk.style.height=s+'px';brk.style.left=sel.sx-s/2+'px';brk.style.top=sel.sy-s/2+'px';
+      const c=$('card');if(c.style.display==='block'&&W>700){c.style.left=Math.min(W-c.offsetWidth-12,sel.sx+s/2+18)+'px';c.style.top=Math.max(60,Math.min(H-c.offsetHeight-12,sel.sy-40))+'px';}
+      sel.label.style.display='none';
+    }else brk.style.display='none';
+  }
+  requestAnimationFrame(frame);
+}
+labels.querySelectorAll('.lab').forEach(l=>l.style.left=l.style.top='0');
+select(location.hash.slice(1)||null,true);
+requestAnimationFrame(frame);
+window.__ready=true;
+</script>
+</body>
+</html>
