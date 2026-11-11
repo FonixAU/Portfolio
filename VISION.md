@@ -17,8 +17,7 @@ The feeling I'm chasing: the galactic map in **Spore** (systems, planets, a sens
 map of a life) plus the curiosity of **Outer Wilds** (you figure things out by going there,
 not by reading a menu). Not a game — a site that borrows the *feeling* of one.
 
-Hard rule from the start: **original visuals only.** Inspired by those games' interaction
-ideas, never their assets, names, or UI.
+Intention here is not to build a space flying SIM, it should be dragable, clickable and navigated like a Menu. Just like Spore's Space gameplay map or the Outer wilds Map screen.
 
 ## What each part of the map meant
 
@@ -29,8 +28,7 @@ ideas, never their assets, names, or UI.
 | Projects system | Things I've built | Each project its own planet; tech and achievements orbit as nodes |
 | Lab | Experiments, prototypes, half-finished ideas | Room to be unfinished in public without it looking sloppy |
 | Tools | Small utilities | Proof of "I make useful things" in one click, no résumé speak |
-| Writing | Longer thinking | The only place that's allowed to be wordy |
-| Contact | How to reach me | Deliberately small and at the edge of the map |
+| Contact | How to reach me | Function of the Black hole/Center of galaxy |
 | Admin | Private | Me-only controls; also a place to show I can build gated things |
 
 Zoom levels, one per URL: galaxy → system → planet → moon → detail. **Every view has a
@@ -79,7 +77,7 @@ attempt and the one I'd most regret dropping.
 ## How the fresh start should go
 
 1. **Content first, in plain text.** Write the real career/project copy before any 3D. If the
-   words don't hold up as a boring list, the galaxy won't save them.
+   words don't hold up as a boring list, the galaxy won't save them. Investigation mode planning happens here when applicable.
 2. **One system, end to end.** Galaxy → Portfolio system → one planet → one moon → a real
    role, on a phone and with a keyboard, deployed publicly. That's the first ship.
 3. **Then the boring-but-necessary twin:** a plain `/index` list of everything in the galaxy,
@@ -92,7 +90,6 @@ attempt and the one I'd most regret dropping.
 
 ## Non-negotiables
 
-- Original art and UI only, no game assets.
 - Shareable URL per view; back button always works.
 - Keyboard + screen-reader path to every piece of content.
 - Respects reduced motion.
