@@ -99,7 +99,7 @@ const B = [
  {id:'contact',name:'Contact',lane:'sun',what:'Developer based in Sydney. Say hello.',when:'',part:'',stack:[],desc:'A three-line pitch and the top skills, computed from the entries, will sit here.'},
  {id:'linfox',name:'Linfox',lane:'career',size:3,type:2,pal:[0x1f5f8b,0x6b8f4e,0xf1efe8],what:'Role and years, one line',when:'',part:'',stack:[],desc:'',
    moons:[{id:'linfox-role-1',name:'Role one'},{id:'linfox-role-2',name:'Role two'}]},
- {id:'diverse-tech-lab',name:'Diverse Tech Lab',lane:'career',size:1,type:0,pal:[0x7a5a3a,0xc9a26b,0x4a3a2a],what:'Development intern in a small, close-knit team',when:'2021, six months',part:'Intern',stack:[],
+ {id:'diverse-tech-lab',name:'Diverse Tech Lab',lane:'career',size:1,type:2,pal:[0x1d6b6b,0xb89a5a,0xf1efe8],what:'Development intern in a small, close-knit team',when:'2021, six months',part:'Intern',stack:[],
    desc:'Worked alongside and independently in each team member’s role, across a wide range of technologies.'},
  {id:'wedding-suite',name:'Wedding suite',lane:'projects',size:2,type:1,pal:[0xc98a7a,0xf0d2b0,0x8a4a5a],ring:true,what:'Complete wedding website and digital invitation suite',when:'Live',part:'Solo build',stack:['Next.js','Cloudinary','Directus','Handlebars','fly.io'],
    desc:'Everything about a wedding that could be digitised: a Next.js site with a Cloudinary-backed guest photo gallery, templated digital invitations, and a Directus guest-list back end a non-technical partner can run.',
@@ -112,7 +112,7 @@ const B = [
  {id:'portfolio',name:'Portfolio',lane:'projects',size:1,type:4,pal:[0x9aa7b8,0xdfe6ee,0x5a6a7c],what:'This site: a solar system an agent keeps up to date',when:'In progress',part:'Solo build',stack:['three.js'],desc:'One content file per entry; the planet is generated from it.'},
  {id:'roulette',name:'Roulette',lane:'games',size:2,type:3,pal:[0x1a1210,0xff6a2a,0x000000],what:'Multiplayer Russian Roulette game with party and ranked modes',when:'In progress',part:'Solo build',stack:['Unreal Engine','Multiplayer'],
    desc:'First-person, proximity voice. Party mode for up to six friends and a single-life ranked mode that forms a king-of-the-hill leaderboard.'},
- {id:'roguelike',name:'Roguelike',lane:'games',size:2,type:1,pal:[0x7a2f4a,0xe08a6a,0x3a1626],what:'Hades-style isometric action roguelike',when:'In progress',part:'Solo build',stack:['Unity','C#'],
+ {id:'roguelike',name:'Roguelike',lane:'games',size:2,type:3,pal:[0x2a1014,0xff4a3a,0x000000],what:'Hades-style isometric action roguelike',when:'In progress',part:'Solo build',stack:['Unity','C#'],
    desc:'Movement and dash, a combat engine with hit-stop and combos, state-machine enemy AI and a partly built upgrade system.'},
  {id:'wagent',name:'Wagent',lane:'games',size:1,type:0,pal:[0x8a6a2a,0xe0c070,0x4a3a16],what:'In-game AI chat sidebar for World of Warcraft',when:'In progress',part:'Solo build',stack:['Lua'],desc:''},
  {id:'breaking-captcha',name:'Breaking CAPTCHA',lane:'belt',what:'Text and audio CAPTCHA research, university capstone',when:'2022',part:'Small group project',stack:['Python','Machine learning'],desc:''},
@@ -155,18 +155,32 @@ float vnoise(vec3 x){vec3 i=floor(x),f=fract(x);f=f*f*(3.-2.*f);
 float fbm(vec3 p){float a=.5,s=0.;for(int i=0;i<5;i++){s+=a*vnoise(p);p=p*2.03+7.1;a*=.5;}return s;}`;
 const VERT = `varying vec3 vO;varying vec3 vW;varying vec3 vN;
 void main(){vO=normalize(position);vec4 w=modelMatrix*vec4(position,1.);vW=w.xyz;vN=normalize(mat3(modelMatrix)*normal);gl_Position=projectionMatrix*viewMatrix*w;}`;
-const PLANET = NOISE+`uniform vec3 A;uniform vec3 Bc;uniform vec3 C;uniform int T;uniform float S;varying vec3 vO;varying vec3 vW;varying vec3 vN;
+const PVERT = NOISE+`uniform float D;uniform float S;varying vec3 vO;varying vec3 vW;varying vec3 vN;
+void main(){vec3 u=normalize(position);vec4 lp=vec4(position*(1.+D*(fbm(u*2.+S)*2.-1.)),1.);
+#ifdef USE_INSTANCING
+lp=instanceMatrix*lp;
+#endif
+vO=normalize(lp.xyz);vec4 w=modelMatrix*lp;vW=w.xyz;vN=normalize(mat3(modelMatrix)*normal);gl_Position=projectionMatrix*viewMatrix*w;}`;
+const PLANET = NOISE+`uniform vec3 A;uniform vec3 Bc;uniform vec3 C;uniform int T;uniform float S;uniform float F;varying vec3 vO;varying vec3 vW;varying vec3 vN;
 void main(){vec3 p=vO+vec3(S,S*1.7,S*.3);float n=fbm(p*2.4);vec3 col;float glow=0.;
+ vec3 N=F>.5?normalize(cross(dFdx(vW),dFdy(vW))):vN;
+ vec3 L=normalize(-vW),V=normalize(cameraPosition-vW);float d=smoothstep(-.15,.75,dot(N,L));
  if(T==0){col=mix(A,Bc,smoothstep(.38,.62,n));col=mix(col,C,smoothstep(.55,.7,fbm(p*7.))*.7);}
  else if(T==1){float b=vO.y*7.+fbm(p*1.6)*2.2;col=mix(A,Bc,.5+.5*sin(b));col=mix(col,C,smoothstep(.55,.8,fbm(vec3(p.x*2.,p.y*11.,p.z*2.)))*.6);}
  else if(T==2){float land=smoothstep(.5,.53,n);col=mix(A*(.7+.6*n),Bc*(.6+.8*fbm(p*6.)),land);
-   col=mix(col,C,smoothstep(.86,.93,abs(vO.y)+n*.2));col=mix(col,vec3(1.),smoothstep(.58,.75,fbm(p*3.+11.))*.55);}
+   col=mix(col,C,smoothstep(.86,.93,abs(vO.y)+n*.2));col=mix(col,vec3(1.),smoothstep(.58,.75,fbm(p*3.+11.))*.55);
+   glow=land*(1.-d)*step(.7,vnoise(p*42.))*step(.5,fbm(p*5.+3.))*.9;}
  else if(T==3){float cr=1.-smoothstep(0.,.07,abs(n-.5));col=mix(A+.08*fbm(p*9.),Bc,cr);glow=cr;}
  else{col=mix(A,Bc,smoothstep(.3,.7,n));col=mix(col,C,smoothstep(.6,.62,fbm(vec3(p.x*9.,p.y*1.5,p.z*9.)))*.5);}
- vec3 L=normalize(-vW),V=normalize(cameraPosition-vW);float d=smoothstep(-.15,.75,dot(vN,L));
- float rim=pow(1.-max(dot(vN,V),0.),2.5);
- vec3 o=col*(.12+d)+glow*Bc*.9+rim*mix(Bc,vec3(.6,.8,1.),.5)*(.15+.6*d);
+ float rim=pow(1.-max(dot(N,V),0.),2.5);
+ vec3 gc=T==2?vec3(1.,.8,.4):Bc;
+ vec3 o=col*(.12+d)+glow*gc*.9+rim*mix(Bc,vec3(.6,.8,1.),.5)*(.15+.6*d);
  gl_FragColor=vec4(o,1.);}`;
+const ATMO = `uniform vec3 C;varying vec3 vO;varying vec3 vW;varying vec3 vN;
+void main(){vec3 V=normalize(cameraPosition-vW);float n=max(dot(vN,V),0.);float a=n<.5?pow(n*2.,2.5):mix(1.,.1,smoothstep(.5,.72,n));
+ float d=smoothstep(-.4,.6,dot(vN,normalize(-vW)));gl_FragColor=vec4(C,a*(.15+.85*d)*.8);}`;
+const RING = `uniform vec3 C;varying vec3 vP;void main(){float t=(length(vP.xy)-1.4)/.9;float a=.2+.5*smoothstep(.3,.7,fract(t*4.+.2));
+ a*=smoothstep(0.,.03,abs(t-.58)-.03)*smoothstep(0.,.06,t)*smoothstep(1.,.94,t);gl_FragColor=vec4(C,a);}`;
 const SUN = NOISE+`uniform float t;varying vec3 vO;varying vec3 vW;varying vec3 vN;
 void main(){float n=fbm(vO*3.+vec3(0.,t*.04,t*.02));float m=fbm(vO*9.-t*.03);vec3 V=normalize(cameraPosition-vW);
  vec3 col=mix(vec3(1.,.22,0.),vec3(1.,.62,.08),smoothstep(.35,.7,n));col=mix(col,vec3(1.,.9,.5),smoothstep(.62,.8,m)*.6);
@@ -182,13 +196,44 @@ const sphere = new THREE.SphereGeometry(1,48,32);
 const sun = byId.contact; sun.r=3.2; sun.group=new THREE.Group(); scene.add(sun.group);
 const sunMat=new THREE.ShaderMaterial({vertexShader:VERT,fragmentShader:SUN,uniforms:{t:{value:0}}});
 sun.mesh=new THREE.Mesh(sphere,sunMat); sun.mesh.scale.setScalar(sun.r); sun.mesh.userData.b=sun; sun.group.add(sun.mesh);
+let glowTex;
 {const cv=document.createElement('canvas');cv.width=cv.height=256;const x=cv.getContext('2d'),g=x.createRadialGradient(128,128,20,128,128,128);
  g.addColorStop(0,'rgba(255,120,30,.8)');g.addColorStop(.45,'rgba(255,70,10,.22)');g.addColorStop(1,'rgba(255,40,0,0)');x.fillStyle=g;x.fillRect(0,0,256,256);
- const s=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(cv),blending:THREE.AdditiveBlending,depthWrite:false}));s.scale.setScalar(sun.r*3.6);scene.add(s);}
+ glowTex=new THREE.CanvasTexture(cv);const s=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,blending:THREE.AdditiveBlending,depthWrite:false}));s.scale.setScalar(sun.r*3.6);scene.add(s);}
 
 const pick=[sun.mesh];
-function planetMat(b){return new THREE.ShaderMaterial({vertexShader:VERT,fragmentShader:PLANET,
-  uniforms:{A:{value:rgb(b.pal[0])},Bc:{value:rgb(b.pal[1])},C:{value:rgb(b.pal[2])},T:{value:b.type},S:{value:b.seed}}});}
+function planetMat(b,o={}){const pal=o.pal||b.pal;return new THREE.ShaderMaterial({vertexShader:PVERT,fragmentShader:PLANET,side:o.side||THREE.FrontSide,
+  uniforms:{A:{value:rgb(pal[0])},Bc:{value:rgb(pal[1])},C:{value:rgb(pal[2])},T:{value:o.type??b.type},S:{value:b.seed},D:{value:o.D||0},F:{value:o.F||0}}});}
+/* ---------- body shapes: each gives a different silhouette ---------- */
+const SHAPES={linfox:'world','diverse-tech-lab':'world','wedding-suite':'giant',zanitee:'crystal','obs-chat':'twin','nominate-bot':'rugged',portfolio:'holo',roulette:'shattered',roguelike:'molten',wagent:'comet'};
+const rock=new THREE.IcosahedronGeometry(1,3), UP=new THREE.Vector3(0,1,0);
+const ghost=()=>new THREE.MeshBasicMaterial({colorWrite:false,depthWrite:false}); // invisible, still clickable
+function build(b){const s=b.shape;
+  if(s==='rugged'||s==='comet')return new THREE.Mesh(rock,planetMat(b,{D:.24,F:1}));
+  if(s==='molten')return new THREE.Mesh(rock,planetMat(b,{D:.1,F:1}));
+  if(s==='twin'||s==='holo'||s==='shattered')return new THREE.Mesh(sphere,ghost());
+  return new THREE.Mesh(sphere,planetMat(b));}
+function decorate(b,R){const m=b.mesh,s=b.shape;
+  if(s==='world'){const h=new THREE.Mesh(sphere,new THREE.ShaderMaterial({vertexShader:VERT,fragmentShader:ATMO,uniforms:{C:{value:rgb(0x7fc4ff)}},transparent:true,depthWrite:false,blending:THREE.AdditiveBlending}));h.scale.setScalar(1.16);m.add(h);}
+  if(s==='giant'){m.scale.y*=.88;const rg=new THREE.Mesh(new THREE.RingGeometry(1.4,2.3,96),new THREE.ShaderMaterial({uniforms:{C:{value:rgb(b.pal[1])}},transparent:true,depthWrite:false,side:THREE.DoubleSide,
+    vertexShader:`varying vec3 vP;void main(){vP=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,fragmentShader:RING}));rg.rotation.x=Math.PI/2;m.add(rg);}
+  if(s==='crystal'){const n=30,im=new THREE.InstancedMesh(new THREE.ConeGeometry(.16,1,5),planetMat(b,{F:1}),n),d=new THREE.Object3D();
+    for(let i=0;i<n;i++){const dir=new THREE.Vector3(R()-.5,R()-.5,R()-.5).normalize(),h=.5+R()*.9;d.position.copy(dir).multiplyScalar(.85+h/2);d.quaternion.setFromUnitVectors(UP,dir);d.scale.set(.7+R()*.8,h,.7+R()*.8);d.updateMatrix();im.setMatrixAt(i,d.matrix);}
+    m.add(im);}
+  if(s==='twin'){b.spin=.5;[[-.8,b.pal],[.8,[0xb0522a,0xf0c090,0x5a2416]]].forEach(([x,pal])=>{const t=new THREE.Mesh(sphere,planetMat(b,{pal}));t.position.x=x;t.scale.setScalar(.6);m.add(t);});}
+  if(s==='holo'){b.spin=.3;const mk=(g,c,o)=>new THREE.LineSegments(new THREE.WireframeGeometry(g),new THREE.LineBasicMaterial({color:c,transparent:true,opacity:o}));
+    m.add(mk(new THREE.IcosahedronGeometry(1,1),0x7fe0ff,.9),mk(new THREE.OctahedronGeometry(.5,0),0xffffff,.75));}
+  if(s==='shattered'){b.spin=.08;const ico=new THREE.IcosahedronGeometry(1,1).attributes.position,pts=[],v3=i=>new THREE.Vector3().fromBufferAttribute(ico,i);
+    for(let i=0;i<ico.count;i+=3){if(R()<.22)continue;const t=[v3(i),v3(i+1),v3(i+2)],c=t[0].clone().add(t[1]).add(t[2]).divideScalar(3),k=1+R()*.16;
+      const o=t.map(p=>p.lerp(c,.14).multiplyScalar(k));pts.push(...o,...o.map(p=>p.clone().multiplyScalar(.86)).reverse());}
+    m.add(new THREE.Mesh(new THREE.BufferGeometry().setFromPoints(pts),planetMat(b,{F:1,side:THREE.DoubleSide,type:0,pal:[0x3a2a26,0x70504a,0x1a1210]})));
+    const core=new THREE.Mesh(sphere,new THREE.MeshBasicMaterial({color:0xff6a1a}));core.scale.setScalar(.48);m.add(core);
+    const g=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,blending:THREE.AdditiveBlending,depthWrite:false}));g.scale.setScalar(2.6);m.add(g);}
+  if(s==='comet'){const g=new THREE.ConeGeometry(.9,9,20,1,true);g.rotateX(Math.PI);g.translate(0,4.5,0);
+    b.tail=new THREE.Mesh(g,new THREE.ShaderMaterial({transparent:true,depthWrite:false,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,
+      vertexShader:`varying float h;void main(){h=position.y/9.;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
+      fragmentShader:`varying float h;void main(){gl_FragColor=vec4(.6,.85,1.,pow(1.-h,2.5)*.2);}`}));b.tail.scale.setScalar(b.r);b.group.add(b.tail);}
+}
 function orbitLine(r,color,op,seg=256){const pts=[];for(let i=0;i<=seg;i++){const a=i/seg*Math.PI*2;pts.push(new THREE.Vector3(Math.cos(a)*r,0,Math.sin(a)*r));}
   return new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color,transparent:true,opacity:op}));}
 // deterministic pseudo-random from the id: same data, same system
@@ -200,8 +245,7 @@ planets.forEach((b,i)=>{
   const tint=new THREE.Color(LANES[b.lane].tint).offsetHSL((R()-.5)*.06,0,(R()-.5)*.1);
   scene.add(orbitLine(b.a,tint,.55));
   b.group=new THREE.Group(); scene.add(b.group);
-  b.mesh=new THREE.Mesh(sphere,planetMat(b)); b.mesh.scale.setScalar(b.r); b.mesh.rotation.z=(R()-.5)*.6; b.mesh.userData.b=b; b.group.add(b.mesh); pick.push(b.mesh);
-  if(b.ring){const rg=new THREE.Mesh(new THREE.RingGeometry(b.r*1.45,b.r*2.1,64),new THREE.MeshBasicMaterial({color:b.pal[1],transparent:true,opacity:.35,side:THREE.DoubleSide}));rg.rotation.x=Math.PI/2-.35;b.group.add(rg);}
+  b.shape=SHAPES[b.id]; b.mesh=build(b); b.mesh.scale.setScalar(b.r); b.mesh.rotation.z=(R()-.5)*.6; b.mesh.userData.b=b; b.group.add(b.mesh); pick.push(b.mesh); decorate(b,R);
   (b.moons||[]).forEach((m,j)=>{m.r=b.r*.22;m.a=b.r*(2.4+j*.7);m.ang=R()*6.28;m.speed=.25/(j+1);m.seed=R()*50;m.type=0;m.pal=[0x777570,0xb4b2a9,0x444441];
     b.group.add(orbitLine(m.a,0xffffff,.18,96));
     m.mesh=new THREE.Mesh(sphere,planetMat(m));m.mesh.scale.setScalar(m.r);m.mesh.userData.b=m;b.group.add(m.mesh);pick.push(m.mesh);});
@@ -214,7 +258,7 @@ const beltR=10+planets.length*3.4+4, belt=new THREE.Group(); scene.add(belt);
  belt.add(im);}
 B.filter(b=>b.lane==='belt').forEach((b,i,all)=>{const R=rnd(b.id);b.seed=R()*50;b.r=.34;b.type=0;b.pal=[0x5f5e5a,0x9a988f,0x2c2c2a];b.ang=i/all.length*6.283+.6;b.a=beltR+(R()-.5)*2;
   b.group=new THREE.Group();b.group.position.set(Math.cos(b.ang)*b.a,0,Math.sin(b.ang)*b.a);belt.add(b.group);
-  b.mesh=new THREE.Mesh(new THREE.IcosahedronGeometry(1,1),planetMat(b));b.mesh.scale.set(b.r,b.r*.75,b.r*.85);b.mesh.userData.b=b;b.group.add(b.mesh);pick.push(b.mesh);});
+  b.mesh=new THREE.Mesh(rock,planetMat(b,{D:.35,F:1}));b.mesh.scale.set(b.r,b.r*.75,b.r*.85);b.mesh.userData.b=b;b.group.add(b.mesh);pick.push(b.mesh);});
 // focus grid
 const grid=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.ShaderMaterial({transparent:true,depthWrite:false,side:THREE.DoubleSide,uniforms:{o:{value:0}},
   vertexShader:`varying vec2 u;void main(){u=uv-.5;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
@@ -283,7 +327,7 @@ function frame(now){
   const dt=Math.min(.05,(now-last)/1000);last=now;
   if(view==='3d'){
     const drift=reduced?0:dt; sunMat.uniforms.t.value+=drift;
-    for(const b of planets){b.ang+=b.speed*drift*.35;b.group.position.set(Math.cos(b.ang)*b.a,0,Math.sin(b.ang)*b.a);b.mesh.rotation.y+=drift*.05;
+    for(const b of planets){b.ang+=b.speed*drift*.35;b.group.position.set(Math.cos(b.ang)*b.a,0,Math.sin(b.ang)*b.a);b.mesh.rotation.y+=drift*(b.spin||.05);if(b.tail)b.tail.quaternion.setFromUnitVectors(UP,v.copy(b.group.position).normalize());
       for(const m of b.moons||[]){m.ang+=m.speed*drift;m.mesh.position.set(Math.cos(m.ang)*m.a,0,Math.sin(m.ang)*m.a);}}
     belt.rotation.y-=drift*.0012;
     const k=reduced?1:1-Math.exp(-dt*4.5);
