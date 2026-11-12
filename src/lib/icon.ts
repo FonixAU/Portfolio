@@ -69,8 +69,17 @@ export function icon(b: IconBody): string {
     return p.map((a, i) => { const q = p[(i + 1) % n], z = p[(i + n - 1) % n]; return `${i ? '' : `M${f((z[0] + a[0]) / 2)} ${f((z[1] + a[1]) / 2)}`}Q${f(a[0])} ${f(a[1])} ${f((a[0] + q[0]) / 2)} ${f((a[1] + q[1]) / 2)}`; }).join('') + 'Z';
   };
   const lands = (count: number, rmin: number, rmax: number) => {
+    // Each blotch must either clearly overlap its neighbours or stand well clear of them; near-misses are re-rolled.
+    const placed: number[][] = [];
     let d = '';
-    for (let i = 0; i < count; i++) { const a = (i / count) * 6.2832 + R() * 1.6, q = 10 + R() * 18; d += blob(Math.cos(a) * q, Math.sin(a) * q * 0.8 + 4, rmin + R() * (rmax - rmin)); }
+    for (let i = 0; i < count; i++) {
+      for (let tries = 0; tries < 48; tries++) {
+        const a = R() * 6.2832, q = 6 + R() * 22, x = Math.cos(a) * q, y = Math.sin(a) * q * 0.8 + 4, r = (rmin + R() * (rmax - rmin)) * (tries > 24 ? 0.75 : 1); // late tries shrink, so a crowded disc still gets its land
+        const ok = placed.every(([px, py, pr]) => { const dist = Math.hypot(x - px, y - py), sum = r + pr; return dist < 0.7 * sum || dist > 1.45 * sum + 4; }); // the outlines wander up to ~1.4x the nominal radius
+        if (!ok) continue;
+        placed.push([x, y, r]); d += blob(x, y, r); break;
+      }
+    }
     // outline first, then the fill again on top: where blotches overlap, the inner lines are covered and the land reads as one mass
     return `<g clip-path="url(#discClip)"><path d="${d}" fill="${B}" stroke="${INK}" stroke-width="2.8" stroke-linejoin="round"/><path d="${d}" fill="${B}"/></g>`;
   };
@@ -79,7 +88,7 @@ export function icon(b: IconBody): string {
   const art: Record<string, string> = {
     sun: sunArt,
     // an inhabited world: continents, a cap of ice, a few waves, and a dotted ring for its air
-    world: `<circle r="47" fill="none" stroke="${B}" stroke-opacity=".7" stroke-width="1.4" stroke-dasharray="1.5 4.5" stroke-linecap="round"/>${disc()}${sea(4)}${lands(2 + Math.floor(R() * 3), 8, 15)}<path d="M-22 -33a40 40 0 0 1 44 0q-22 9 -44 0z" fill="${C}" stroke="${INK}" stroke-width="1.3"/>${dots()}`,
+    world: `<circle r="47" fill="none" stroke="${B}" stroke-opacity=".7" stroke-width="1.4" stroke-dasharray="1.5 4.5" stroke-linecap="round"/>${disc()}${sea(4)}${lands(3 + Math.floor(R() * 3), 6.5, 12)}<path d="M-22 -33a40 40 0 0 1 44 0q-22 9 -44 0z" fill="${C}" stroke="${INK}" stroke-width="1.3"/>${dots()}`,
     ocean: `${disc()}${sea(8)}${lands(1 + Math.floor(R() * 2), 5, 9)}${dots()}`,
     // a banded giant with its ring drawn as two ink lines
     giant: `<g transform="rotate(-14)"><ellipse rx="40" ry="38" fill="${A}" stroke="${INK}" stroke-width="2"/>${line('M-38 -14q38 9 76 0M-39 3q39 9 78 0M-34 20q34 8 68 0', B, 6, 'opacity=".85"')}${line('M-36 -20q36 8 72 0M-40 -4q40 9 80 0M-38 12q38 9 76 0', INK, 0.9, 'opacity=".7"')}${dots(0.97)}
