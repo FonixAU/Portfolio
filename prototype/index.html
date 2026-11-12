@@ -340,7 +340,7 @@ function render(){
       `<button data-go="${b.id}" aria-current="${cur===b}">${b.name}</button>`+(b.moons||[]).map(m=>`<button class="moon" data-go="${m.id}" aria-current="${cur===m}">${m.name}</button>`).join('')).join('')).join('');
     const hex=h=>'#'+h.toString(16).padStart(6,'0');
     const sz=b=>b.lane==='sun'?120:b.lane==='belt'?24:[46,62,84][b.size-1];
-    $('lineup').innerHTML=B.filter(b=>!b.parent).map(b=>`<div class="col"><button data-go="${b.id}" aria-label="${b.name}" aria-current="${cur===b}" style="width:${sz(b)}px;height:${sz(b)}px">${icon(b)}</button>${
+    $('lineup').innerHTML=B.filter(b=>!b.parent).sort((x,y)=>(x.lane==='belt')-(y.lane==='belt')).map(b=>`<div class="col"><button data-go="${b.id}" aria-label="${b.name}" aria-current="${cur===b}" style="width:${sz(b)}px;height:${sz(b)}px">${icon(b)}</button>${
       (b.moons||[]).length?`<div class="moons">${b.moons.map(m=>`<button data-go="${m.id}" aria-label="${m.name}" aria-current="${cur===m}" style="width:22px;height:22px">${icon(m)}</button>`).join('')}</div>`:''}</div>`).join('');
     $('logentry').innerHTML=`<div class="entry">${entryHTML(cur,false)}</div>`;}
 }
