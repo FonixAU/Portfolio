@@ -42,8 +42,8 @@ html:not(.js) .js { display: none; }
 .row { display: flex; gap: 18px; }
 .col { position: relative; display: grid; grid-template-rows: var(--rowh) auto; justify-items: center; min-width: calc(120px * var(--k)); }
 .grp:last-child .col { min-width: calc(48px * var(--k)); }
-.grp:first-child .col { min-width: calc(150px * var(--k)); justify-items: start; }
-.grp:first-child .body { margin-left: calc(-128px * var(--k)); }
+.grp:first-child .col { min-width: calc(190px * var(--k)); justify-items: start; }
+.grp:first-child .body { margin-left: calc(-78px * var(--k)); }
 .grp:first-child .nm { left: auto; right: 4px; top: auto; bottom: 14%; transform: none; text-shadow: 0 0 4px #000, 0 0 2px #000; color: var(--ink); }
 .grp:first-child .cap { position: relative; z-index: 1; }
 .body { position: relative; align-self: center; display: block; width: calc(var(--s) * var(--k)); height: calc(var(--s) * var(--k)); border-radius: 50%; text-decoration: none; opacity: .8; transition: opacity .15s, transform .2s; }

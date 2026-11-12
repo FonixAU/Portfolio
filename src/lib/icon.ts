@@ -6,21 +6,39 @@ const hexv = [0, 1, 2, 3, 4, 5].map((i) => [Math.cos((i * Math.PI) / 3) * 42, Ma
 const f = (n: number) => n.toFixed(1);
 const shade = '<circle r="40" fill="url(#shade)"/>';
 
-// The sun, drawn once: a slightly wobbly disc with flat patches, after the Outer Wilds ship log.
+// The sun, drawn once, in the manner of an old engraving: a ring of curling flames, a spiral of fire
+// inside, ink contours and stippled shading. Hand-drawn wobble comes from the #ink filter.
 const sunArt = (() => {
   let h = 20261113;
   const R = () => ((h = Math.imul(h ^ (h >>> 15), 2246822507) ^ Math.imul(h ^ (h >>> 13), 3266489909)) >>> 0) / 4294967296;
-  const blob = (cx: number, cy: number, r: number, n = 9, j = 0.6) => {
-    const p = Array.from({ length: n }, (_, i) => { const a = (i / n) * 6.2832, k = r * (1 - j / 2 + R() * j); return [cx + Math.cos(a) * k, cy + Math.sin(a) * k]; });
-    return p.map((a, i) => { const b = p[(i + 1) % n], z = p[(i + n - 1) % n]; return `${i ? '' : `M${f((z[0] + a[0]) / 2)} ${f((z[1] + a[1]) / 2)}`}Q${f(a[0])} ${f(a[1])} ${f((a[0] + b[0]) / 2)} ${f((a[1] + b[1]) / 2)}`; }).join('') + 'Z';
-  };
-  const layer = (count: number, rmin: number, rmax: number, spread: number, fill: string) => {
+  const P = (a: number, r: number) => `${f(Math.cos(a) * r)} ${f(Math.sin(a) * r)}`;
+  const INK = '#5a1606';
+  // flames: each tongue leans the same way round, so the sun seems to turn
+  let flames = '';
+  const n = 16;
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * 6.2832 + R() * 0.12, w = 0.2 + R() * 0.05, len = i % 2 ? 7 + R() * 3 : 11 + R() * 4, lean = 0.3 + R() * 0.12;
+    flames += `M${P(a - w, 38)}Q${P(a - w * 0.2, 40 + len * 0.55)} ${P(a + lean, 40 + len)}Q${P(a + w * 0.9, 40 + len * 0.35)} ${P(a + w, 38)}Z`;
+  }
+  // spiral of fire from the centre outwards
+  const spiral = (turns: number, r0: number, r1: number, phase: number) => {
     let d = '';
-    for (let i = 0; i < count; i++) { const a = R() * 6.2832, q = Math.sqrt(R()) * spread; d += blob(Math.cos(a) * q, Math.sin(a) * q, rmin + R() * (rmax - rmin)); }
-    return `<path d="${d}" fill="${fill}"/>`;
+    for (let k = 0; k <= 60; k++) { const t = k / 60; d += `${k ? 'L' : 'M'}${P(phase + t * turns * 6.2832, r0 + (r1 - r0) * Math.pow(t, 0.85))}`; }
+    return d;
   };
-  return `<path d="${blob(0, 0, 51, 30, 0.07)}" fill="#c9360f"/><g clip-path="url(#sunClip)"><circle r="48" fill="#e2501a"/>`
-    + layer(11, 11, 20, 40, '#f4701e') + layer(12, 6, 12, 40, '#ff9a28') + layer(9, 3, 6.5, 38, '#ffc94a') + layer(6, 2.5, 5, 40, '#a92a0a') + '</g>';
+  // short curved licks that follow the turn of the spiral
+  let licks = '';
+  for (let i = 0; i < 9; i++) { const a = R() * 6.2832, r = 16 + R() * 17, sw = 0.35 + R() * 0.25; licks += `M${P(a, r)}Q${P(a + sw / 2, r + 4)} ${P(a + sw, r - 1)}`; }
+  // stipple: denser towards the lower right, the way an engraver shades a sphere
+  let dots = '';
+  for (let i = 0; i < 70; i++) { const a = 0.75 + (R() - 0.5) * 2.4, r = 40 * Math.sqrt(0.45 + R() * 0.52); dots += `<circle cx="${f(Math.cos(a) * r)}" cy="${f(Math.sin(a) * r)}" r="${f(0.45 + R() * 0.55)}"/>`; }
+  return `<path d="${flames}" fill="#f0741f" stroke="${INK}" stroke-width="1.6" stroke-linejoin="round"/>
+    <circle r="40" fill="#e55a1b" stroke="${INK}" stroke-width="2"/>
+    <circle r="33" fill="#f07a22"/><circle r="22" fill="#f89a2b"/><circle r="10" fill="#ffc64a"/>
+    <path d="${spiral(2.3, 2, 35, 0.4)}" fill="none" stroke="#ffd066" stroke-width="5" stroke-linecap="round"/>
+    <path d="${spiral(2.3, 4, 37, 0.62)}" fill="none" stroke="${INK}" stroke-width="1.3" stroke-linecap="round"/>
+    <path d="${licks}" fill="none" stroke="#ffe08a" stroke-width="2.4" stroke-linecap="round"/>
+    <g fill="${INK}" opacity=".8">${dots}</g>`;
 })();
 
 export function icon(b: IconBody): string {
@@ -45,11 +63,11 @@ export function icon(b: IconBody): string {
     comet: `<path d="M2 -8L46 -44M10 2L50 -24M-6 -16L30 -50" stroke="#9fd8ff" stroke-width="4" stroke-linecap="round" opacity=".55"/><g transform="translate(-12 12) scale(.62)">${rock}</g>`,
     crystal: `<path d="M0 -50L8 -24 34 -40 24 -12 50 0 24 12 34 40 8 24 0 50 -8 24 -34 40 -24 12 -50 0 -24 -12 -34 -40 -8 -24z" fill="${B}"/><circle r="24" fill="${A}"/><circle r="24" fill="url(#shade)"/>`,
   };
-  return `<svg viewBox="-54 -54 108 108" aria-hidden="true">${art[shape]}</svg>`;
+  return `<svg viewBox="-58 -58 116 116" aria-hidden="true"><g filter="url(#ink)">${art[shape]}</g></svg>`;
 }
 
 /** Shared gradients and filters; include once per page. */
 export const iconDefs = `<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
 <radialGradient id="shade" cx=".34" cy=".3" r=".8"><stop offset="0" stop-color="#fff" stop-opacity=".14"/><stop offset=".5" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".62"/></radialGradient>
-<clipPath id="sunClip"><circle r="47.5"/></clipPath>
+<filter id="ink" x="-10%" y="-10%" width="120%" height="120%"><feTurbulence type="fractalNoise" baseFrequency=".045" numOctaves="2" seed="3" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2.6" xChannelSelector="R" yChannelSelector="G"/></filter>
 </defs></svg>`;
