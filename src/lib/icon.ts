@@ -71,7 +71,8 @@ export function icon(b: IconBody): string {
   const lands = (count: number, rmin: number, rmax: number) => {
     let d = '';
     for (let i = 0; i < count; i++) { const a = (i / count) * 6.2832 + R() * 1.6, q = 10 + R() * 18; d += blob(Math.cos(a) * q, Math.sin(a) * q * 0.8 + 4, rmin + R() * (rmax - rmin)); }
-    return `<g clip-path="url(#discClip)"><path d="${d}" fill="${B}" stroke="${INK}" stroke-width="1.3" stroke-linejoin="round"/></g>`;
+    // outline first, then the fill again on top: where blotches overlap, the inner lines are covered and the land reads as one mass
+    return `<g clip-path="url(#discClip)"><path d="${d}" fill="${B}" stroke="${INK}" stroke-width="2.8" stroke-linejoin="round"/><path d="${d}" fill="${B}"/></g>`;
   };
   const sea = (count: number) => waves(Array.from({ length: count }, () => { const a = R() * 6.2832, q = Math.sqrt(R()) * 28; return [Math.round(Math.cos(a) * q - 8), Math.round(Math.sin(a) * q)]; }));
   const shape = b.kind === 'sun' ? 'sun' : b.parent ? 'moon' : b.kind === 'asteroid' ? 'rugged' : b.body?.shape ?? 'rugged';
