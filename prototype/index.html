@@ -63,7 +63,9 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{
 #nav button.moon{padding-left:28px;color:var(--dim)}
 #nav button[aria-current=true]{background:rgba(111,214,138,.14);color:#fff}
 #lineup{display:flex;align-items:center;gap:22px;overflow-x:auto;padding:0 18px;border:1px solid rgba(120,170,220,.35);border-top:0;border-left:0}
-#lineup button{flex:none;border-radius:50%;border:2px solid transparent}
+#lineup .col{flex:none;display:flex;flex-direction:column;align-items:center;gap:10px}
+#lineup .moons{display:flex;gap:6px}
+#lineup button{flex:none;border-radius:50%;border:2px solid transparent;padding:0}
 #lineup button[aria-current=true]{border-color:#bfe6ff;box-shadow:0 0 0 3px rgba(191,230,255,.25)}
 #logentry{overflow:auto;padding:16px;border:1px solid rgba(120,170,220,.35);border-top:0;border-left:0}
 #logentry .entry{max-width:900px;display:grid;grid-template-columns:minmax(180px,320px) minmax(0,1fr);gap:20px}
@@ -299,6 +301,29 @@ function select(id,fromHash){
   render();
 }
 const $=id=>document.getElementById(id);
+/* stylised 2D icon per body shape, for the log line-up (Outer Wilds ship log style) */
+function icon(b){
+  const hx=h=>'#'+h.toString(16).padStart(6,'0'),[A,Bc,C]=(b.pal||[0x777570,0xb4b2a9,0x444441]).map(hx);
+  const s=b.lane==='sun'?'sun':b.parent?'moon':b.lane==='belt'?'rugged':SHAPES[b.id]||'rugged';
+  const rockPts='-34,-18 -8,-40 26,-30 40,-2 28,30 -6,40 -36,20';
+  const rock=`<polygon points="${rockPts}" fill="${A}"/><polygon points="-8,-40 26,-30 4,-4" fill="${Bc}"/><polygon points="40,-2 28,30 4,-4" fill="${C}" opacity=".85"/><polygon points="-36,20 -6,40 4,-4" fill="${Bc}" opacity=".35"/>`;
+  const hexv=[0,1,2,3,4,5].map(i=>[Math.cos(i*Math.PI/3)*42,Math.sin(i*Math.PI/3)*42]);
+  const g={
+   sun:`<circle r="48" fill="#ff4a10"/><path d="M-30 -14q12 -16 28 -6t20 -4q8 14 -8 20t-30 4z" fill="#ff9a20"/><path d="M-6 22q14 -8 26 0t-4 16q-18 4 -22 -8z" fill="#ffb840"/><circle cx="26" cy="-22" r="7" fill="#ffb840"/>`,
+   world:`<circle r="47" fill="none" stroke="#7fc4ff" stroke-opacity=".45" stroke-width="4"/><circle r="40" fill="${A}"/><path d="M-30 -8q10 -14 22 -6t16 2q4 10 -8 14t-22 2z" fill="${Bc}"/><path d="M6 14q12 -6 20 2t-2 14q-14 4 -18 -6z" fill="${Bc}"/><path d="M-22 -33a40 40 0 0 1 44 0q-22 9 -44 0z" fill="${C}"/>`,
+   giant:`<g transform="rotate(-14)"><ellipse rx="34" ry="30" fill="${A}"/><path d="M-31 -10h62M-32 4h64M-26 17h52" stroke="${Bc}" stroke-width="5" stroke-linecap="round" opacity=".8"/><ellipse rx="50" ry="11" fill="none" stroke="${Bc}" stroke-width="4"/><ellipse rx="42" ry="8" fill="none" stroke="${C}" stroke-width="2"/></g>`,
+   twin:`<circle cx="-18" cy="6" r="25" fill="${A}"/><circle cx="-26" cy="0" r="7" fill="${Bc}"/><circle cx="24" cy="-10" r="20" fill="#b0522a"/><circle cx="28" cy="-4" r="6" fill="#f0c090"/>`,
+   rugged:rock,
+   moon:`<circle r="40" fill="#8a8882"/><circle cx="-12" cy="-10" r="9" fill="#5f5e5a"/><circle cx="14" cy="12" r="6" fill="#5f5e5a"/>`,
+   holo:`<g fill="none" stroke="#7fe0ff" stroke-width="2.5" stroke-linejoin="round"><polygon points="${hexv.map(v=>v.map(n=>n.toFixed(1))).join(' ')}"/><path d="${hexv.map(v=>`M0 0L${v[0].toFixed(1)} ${v[1].toFixed(1)}`).join('')}" stroke-opacity=".6"/><polygon points="0,-20 17,10 -17,10" stroke="#fff"/></g>`,
+   shattered:`<circle r="15" fill="#ff6a1a"/><circle r="24" fill="#ff6a1a" opacity=".25"/>`+hexv.map((v,i)=>{const w=hexv[(i+1)%6],a=(i+.5)*Math.PI/3,k=i%2?1.06:.94;
+     return `<polygon points="${(v[0]*.94*k).toFixed(1)},${(v[1]*.94*k).toFixed(1)} ${(w[0]*.94*k).toFixed(1)},${(w[1]*.94*k).toFixed(1)} ${(Math.cos(a)*24).toFixed(1)},${(Math.sin(a)*24).toFixed(1)}" fill="${i%2?'#70504a':'#4a3530'}"/>`}).join(''),
+   molten:`<circle r="40" fill="${A}"/><path d="M-34 -10l14 6 8 -14 16 10 10 -8 18 12M-28 18l16 -6 12 12 14 -10 16 8" fill="none" stroke="${Bc}" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>`,
+   comet:`<path d="M2 -8L46 -44M10 2L50 -24M-6 -16L30 -50" stroke="#9fd8ff" stroke-width="4" stroke-linecap="round" opacity=".55"/><g transform="translate(-12 12) scale(.62)">${rock}</g>`,
+   crystal:`<path d="M0 -50L8 -24 34 -40 24 -12 50 0 24 12 34 40 8 24 0 50 -8 24 -34 40 -24 12 -50 0 -24 -12 -34 -40 -8 -24z" fill="${Bc}"/><circle r="24" fill="${A}"/>`
+  }[s];
+  return `<svg viewBox="-54 -54 108 108" width="100%" height="100%" aria-hidden="true" style="display:block">${g}</svg>`;
+}
 function render(){
   const lane=sel&&LANES[sel.lane].name, par=sel&&sel.parent&&byId[sel.parent];
   $('crumb').innerHTML=sel?`<button data-go="">System</button> / ${lane}${par?` / <button data-go="${par.id}">${par.name}</button>`:''} / ${sel.name}`:'System';
@@ -313,8 +338,9 @@ function render(){
     $('nav').innerHTML=Object.entries(LANES).map(([k,l])=>`<h2>${l.name}</h2>`+B.filter(b=>b.lane===k&&!b.parent).map(b=>
       `<button data-go="${b.id}" aria-current="${cur===b}">${b.name}</button>`+(b.moons||[]).map(m=>`<button class="moon" data-go="${m.id}" aria-current="${cur===m}">${m.name}</button>`).join('')).join('')).join('');
     const hex=h=>'#'+h.toString(16).padStart(6,'0');
-    $('lineup').innerHTML=B.filter(b=>!b.parent).map(b=>{const s=b.lane==='sun'?110:b.lane==='belt'?12:[26,40,58][b.size-1],c=b.lane==='sun'?'radial-gradient(#ffb020,#ff3a00)':`radial-gradient(circle at 35% 30%,${hex(b.pal[1])},${hex(b.pal[0])})`;
-      return `<button data-go="${b.id}" aria-label="${b.name}" aria-current="${cur===b||cur.parent===b.id}" style="width:${s}px;height:${s}px;background:${c}"></button>`}).join('');
+    const sz=b=>b.lane==='sun'?120:b.lane==='belt'?24:[46,62,84][b.size-1];
+    $('lineup').innerHTML=B.filter(b=>!b.parent).map(b=>`<div class="col"><button data-go="${b.id}" aria-label="${b.name}" aria-current="${cur===b}" style="width:${sz(b)}px;height:${sz(b)}px">${icon(b)}</button>${
+      (b.moons||[]).length?`<div class="moons">${b.moons.map(m=>`<button data-go="${m.id}" aria-label="${m.name}" aria-current="${cur===m}" style="width:22px;height:22px">${icon(m)}</button>`).join('')}</div>`:''}</div>`).join('');
     $('logentry').innerHTML=`<div class="entry">${entryHTML(cur,false)}</div>`;}
 }
 document.addEventListener('click',e=>{const t=e.target.closest('[data-go],[data-open],[data-close]');if(!t)return;
