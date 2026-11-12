@@ -1,5 +1,5 @@
 // Stylised 2D drawing of a body, for the ship-log line-up. Mirrors the 3D shapes.
-type IconBody = { kind: string; parent?: string | null; body?: { shape: string; palette: string[] } };
+type IconBody = { id?: string; kind: string; parent?: string | null; body?: { shape: string; palette: string[] } };
 
 const rockPts = '-34,-18 -8,-40 26,-30 40,-2 28,30 -6,40 -36,20';
 const hexv = [0, 1, 2, 3, 4, 5].map((i) => [Math.cos((i * Math.PI) / 3) * 42, Math.sin((i * Math.PI) / 3) * 42]);
@@ -60,13 +60,26 @@ export function icon(b: IconBody): string {
   const waves = (rows: number[][]) => line(rows.map(([x, y]) => `M${x} ${y}q4 -3.5 8 0t8 0`).join(''), C, 1.5, 'opacity=".75"');
   const rock = `<polygon points="${rockPts}" fill="${A}" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/><polygon points="-8,-40 26,-30 4,-4" fill="${B}"/><polygon points="40,-2 28,30 4,-4" fill="${C}" opacity=".9"/>`
     + line('M-8 -40L4 -4L-36 20M4 -4L40 -2M4 -4L-6 40M26 -30L4 -4L28 30', INK, 1.2) + line('M-28 -8l10 8M-30 2l12 10M-30 12l10 9M10 8l14 12M8 18l10 9', INK, 0.9, 'opacity=".7"');
-  const land = `<path d="M-30 -8q10 -14 22 -6t16 2q4 10 -8 14t-22 2z" fill="${B}" stroke="${INK}" stroke-width="1.3"/><path d="M6 14q12 -6 20 2t-2 14q-14 4 -18 -6z" fill="${B}" stroke="${INK}" stroke-width="1.3"/>`;
+  // Land is generated from the entry's id: the same entry always gets the same continents, and no two entries share them.
+  let h = 2166136261;
+  for (const c of b.id ?? 'x') h = Math.imul(h ^ c.charCodeAt(0), 16777619);
+  const R = () => ((h = Math.imul(h ^ (h >>> 15), 2246822507) ^ Math.imul(h ^ (h >>> 13), 3266489909)) >>> 0) / 4294967296;
+  const blob = (cx: number, cy: number, r: number, n = 8, jit = 0.75) => {
+    const p = Array.from({ length: n }, (_, i) => { const a = (i / n) * 6.2832, k = r * (1 - jit / 2 + R() * jit); return [cx + Math.cos(a) * k * 1.25, cy + Math.sin(a) * k * 0.85]; });
+    return p.map((a, i) => { const q = p[(i + 1) % n], z = p[(i + n - 1) % n]; return `${i ? '' : `M${f((z[0] + a[0]) / 2)} ${f((z[1] + a[1]) / 2)}`}Q${f(a[0])} ${f(a[1])} ${f((a[0] + q[0]) / 2)} ${f((a[1] + q[1]) / 2)}`; }).join('') + 'Z';
+  };
+  const lands = (count: number, rmin: number, rmax: number) => {
+    let d = '';
+    for (let i = 0; i < count; i++) { const a = (i / count) * 6.2832 + R() * 1.6, q = 10 + R() * 18; d += blob(Math.cos(a) * q, Math.sin(a) * q * 0.8 + 4, rmin + R() * (rmax - rmin)); }
+    return `<g clip-path="url(#discClip)"><path d="${d}" fill="${B}" stroke="${INK}" stroke-width="1.3" stroke-linejoin="round"/></g>`;
+  };
+  const sea = (count: number) => waves(Array.from({ length: count }, () => { const a = R() * 6.2832, q = Math.sqrt(R()) * 28; return [Math.round(Math.cos(a) * q - 8), Math.round(Math.sin(a) * q)]; }));
   const shape = b.kind === 'sun' ? 'sun' : b.parent ? 'moon' : b.kind === 'asteroid' ? 'rugged' : b.body?.shape ?? 'rugged';
   const art: Record<string, string> = {
     sun: sunArt,
     // an inhabited world: continents, a cap of ice, a few waves, and a dotted ring for its air
-    world: `<circle r="47" fill="none" stroke="${B}" stroke-opacity=".7" stroke-width="1.4" stroke-dasharray="1.5 4.5" stroke-linecap="round"/>${disc()}${land}<path d="M-22 -33a40 40 0 0 1 44 0q-22 9 -44 0z" fill="${C}" stroke="${INK}" stroke-width="1.3"/>${waves([[-4, -14], [-32, 14], [-18, 28], [14, -2]])}${dots()}`,
-    ocean: `${disc()}${waves([[-28, -18], [-6, -24], [8, -8], [-32, 2], [-12, 8], [12, 14], [-24, 22], [-2, 28]])}<path d="M-6 -4q8 -8 16 -2t-2 12q-12 2 -14 -10z" fill="${B}" stroke="${INK}" stroke-width="1.3"/>${dots()}`,
+    world: `<circle r="47" fill="none" stroke="${B}" stroke-opacity=".7" stroke-width="1.4" stroke-dasharray="1.5 4.5" stroke-linecap="round"/>${disc()}${sea(4)}${lands(2 + Math.floor(R() * 3), 8, 15)}<path d="M-22 -33a40 40 0 0 1 44 0q-22 9 -44 0z" fill="${C}" stroke="${INK}" stroke-width="1.3"/>${dots()}`,
+    ocean: `${disc()}${sea(8)}${lands(1 + Math.floor(R() * 2), 5, 9)}${dots()}`,
     // a banded giant with its ring drawn as two ink lines
     giant: `<g transform="rotate(-14)"><ellipse rx="40" ry="38" fill="${A}" stroke="${INK}" stroke-width="2"/>${line('M-38 -14q38 9 76 0M-39 3q39 9 78 0M-34 20q34 8 68 0', B, 6, 'opacity=".85"')}${line('M-36 -20q36 8 72 0M-40 -4q40 9 80 0M-38 12q38 9 76 0', INK, 0.9, 'opacity=".7"')}${dots(0.97)}
       <ellipse rx="54" ry="11" fill="none" stroke="${B}" stroke-width="4.5"/><ellipse rx="57" ry="12.6" fill="none" stroke="${INK}" stroke-width="1"/><ellipse rx="50.5" ry="9" fill="none" stroke="${INK}" stroke-width="1"/></g>`,
@@ -89,5 +102,6 @@ export function icon(b: IconBody): string {
 
 /** Shared gradients and filters; include once per page. */
 export const iconDefs = `<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<clipPath id="discClip"><circle r="39"/></clipPath>
 <filter id="ink" x="-10%" y="-10%" width="120%" height="120%"><feTurbulence type="fractalNoise" baseFrequency=".045" numOctaves="2" seed="3" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2.6" xChannelSelector="R" yChannelSelector="G"/></filter>
 </defs></svg>`;
