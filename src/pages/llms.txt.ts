@@ -14,6 +14,6 @@ export const GET: APIRoute = async ({ site }) => {
       out.push(line(b), ...bodies.filter((m) => m.parent === b.id).map((m) => '  ' + line(m)));
     }
   }
-  out.push('', '## Small projects', ...bodies.filter((b) => b.kind === 'asteroid').map(line));
+  out.push('', '## Minor works and in-progress', ...bodies.filter((b) => b.kind === 'asteroid').map(line));
   return new Response(out.join('\n') + '\n', { headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
 };

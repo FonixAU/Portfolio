@@ -35,7 +35,7 @@ body: { shape: "rugged", size: 2, palette: ["#3c6e5a", "#7fc8a9", "#1e3a30"] }  
 ```
 
 Rules:
-- `kind: asteroid` is for really small or unfinished things. Asteroids have no `lane` and no `body`.
+- `kind: asteroid` is for minor works and things still in progress (shown as "Minor works & in-progress"). Asteroids have no `lane` and no `body`.
 - Employers are always `shape: world`. Other planets pick the shape that suits them from: `ocean`, `giant`, `crystal`, `twin`, `rugged`, `holo`, `shattered`, `molten`, `comet`.
 - `palette` is three hex colours: main, secondary, accent. `size` is 1 to 3 for how substantial the work is.
 - Reuse the exact spelling of technologies already used in other entries (`Next.js`, not `NextJS`).

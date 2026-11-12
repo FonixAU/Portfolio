@@ -31,7 +31,7 @@ function show(id: string, push = true) {
   doc.title = b ? `${b.title} · ${body.dataset.name}` : body.dataset.home!;
   const parent = b?.parent ? byId.get(b.parent)! : null;
   $('crumb').innerHTML = `<a href="${base}" data-id="">System</a>` + (b
-    ? (b.lane ? `<span> / ${LANES[b.lane]}</span>` : '') + (parent ? `<span> / <a href="${parent.url}" data-id="${parent.id}">${esc(parent.title)}</a></span>` : '') + `<span> / ${esc(b.title)}</span>`
+    ? (b.lane ? `<span> / ${LANES[b.lane]}</span>` : b.kind === 'asteroid' ? '<span> / Minor works &amp; in-progress</span>' : '') + (parent ? `<span> / <a href="${parent.url}" data-id="${parent.id}">${esc(parent.title)}</a></span>` : '') + `<span> / ${esc(b.title)}</span>`
     : '');
   if (push) history.pushState(null, '', b ? b.url : base);
   scene?.select(id);

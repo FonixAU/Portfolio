@@ -13,13 +13,14 @@ const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
 const shown = bodies.find((b) => b.id === (current || 'contact'))!;
 const top = bodies.filter((b) => !b.parent);
 const kidsOf = (id: string) => bodies.filter((b) => b.parent === id);
+const BELT = 'Minor works & in-progress';
 const sun = top.filter((b) => b.kind === 'sun');
 const groups = [
   { name: 'Home', items: sun },
   ...Object.entries(LANES).map(([k, name]) => ({ name, items: top.filter((b) => b.lane === k && b.kind !== 'asteroid') })),
-  { name: 'Asteroid belt', items: top.filter((b) => b.kind === 'asteroid') },
+  { name: BELT, items: top.filter((b) => b.kind === 'asteroid') },
 ].filter((g) => g.items.length);
-const px = (b: (typeof top)[number]) => (b.kind === 'sun' ? 250 : b.kind === 'asteroid' ? 44 : [92, 104, 116][(b.body?.size ?? 1) - 1]);
+const px = (b: (typeof top)[number]) => (b.kind === 'sun' ? 204 : b.kind === 'asteroid' ? 46 : [98, 110, 122][(b.body?.size ?? 1) - 1]);
 const title = current ? `${shown.title} · ${NAME}` : `${NAME} · Cloud and Platform Engineer`;
 const description = shown.what ?? `${NAME}'s portfolio, as a solar system you can explore.`;
 ---
@@ -46,6 +47,7 @@ const description = shown.what ?? `${NAME}'s portfolio, as a solar system you ca
   <nav id="crumb" aria-label="Location">
     <a href={base} data-id="">System</a>
     {current && shown.lane && <span> / {LANES[shown.lane]}</span>}
+    {current && shown.kind === 'asteroid' && <span> / {BELT}</span>}
     {current && shown.parent && <span> / <a href={`${base}${shown.parent}/`} data-id={shown.parent}>{bodies.find((b) => b.id === shown.parent)!.title}</a></span>}
     {current && <span> / {shown.title}</span>}
   </nav>
