@@ -16,7 +16,6 @@ Hands-on with troubleshooting, infrastructure as code and multi-OS environments.
   - [Gallery site](https://fonixau.github.io/Portfolio/site/wedding-suite/gallery/): Next.js site with a guest photo gallery backed by Cloudinary [Next.js, React, Cloudinary, Vercel]
   - [Invitations](https://fonixau.github.io/Portfolio/site/wedding-suite/invitations/): Templated digital invitations and save-the-dates [Handlebars, Express, Bulma, Render]
   - [Guest list](https://fonixau.github.io/Portfolio/site/wedding-suite/guest-list/): Guest list and invitation data in Directus [Directus, Docker, fly.io]
-- [OBS Chat](https://fonixau.github.io/Portfolio/site/obs-chat/): Merges Twitch and Kick live chat into one OBS panel (2025) [JavaScript, OBS, Webhooks, REST APIs]
 - [Nominate Bot](https://fonixau.github.io/Portfolio/site/nominate-bot/): Discord bot that lets a server govern itself by vote [Node.js, Discord, Docker, fly.io]
 - [Portfolio](https://fonixau.github.io/Portfolio/site/portfolio/): This site: a solar system an agent keeps up to date [three.js]
 - [Cryptarch](https://fonixau.github.io/Portfolio/site/cryptarch/): Destiny 2 vault analyzer that tiers your guns from community damage sheets (2026 to present) [Next.js, TypeScript, React, Google Sheets]
@@ -25,7 +24,8 @@ Hands-on with troubleshooting, infrastructure as code and multi-OS environments.
 ## Games
 - [Roulette](https://fonixau.github.io/Portfolio/site/roulette/): Multiplayer Russian Roulette game with party and ranked modes [Unreal Engine, Multiplayer]
 
-## Small projects
+## Minor works and in-progress
+- [OBS Chat](https://fonixau.github.io/Portfolio/site/obs-chat/): Merges Twitch and Kick live chat into one OBS panel (2025) [JavaScript, OBS, Webhooks, REST APIs]
 - [Roguelike](https://fonixau.github.io/Portfolio/site/roguelike/): Hades-style isometric action roguelike [Unity, C#]
 - [Wagent](https://fonixau.github.io/Portfolio/site/wagent/): In-game AI chat sidebar for World of Warcraft [Lua]
 - [Breaking CAPTCHA](https://fonixau.github.io/Portfolio/site/breaking-captcha/): Text and audio CAPTCHA research, university capstone (2022) [Python, Machine learning]
