@@ -66,6 +66,24 @@ doc.addEventListener('click', (ev) => {
   if (t.closest('[data-open]')) { body.dataset.open = ''; doc.querySelector<HTMLElement>('.entry:not([hidden]) [data-close]')?.focus(); }
   else if (t.closest('[data-close]')) { delete body.dataset.open; doc.querySelector<HTMLElement>('.entry:not([hidden]) [data-open]')?.focus(); }
 });
+doc.addEventListener('submit', async (e) => {
+  const form = (e.target as HTMLElement).closest<HTMLFormElement>('form[data-mail]');
+  if (!form) return;
+  e.preventDefault();
+  const status = form.querySelector<HTMLElement>('[data-status]')!, f = new FormData(form), btn = form.querySelector('button')!;
+  if (f.get('website')) return; // honeypot: bots fill every field
+  btn.disabled = true; status.textContent = 'Sending…';
+  try {
+    const r = await fetch('https://api.emailjs.com/api/v1.0/email/send', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ service_id: form.dataset.service, template_id: form.dataset.template, user_id: form.dataset.key,
+        template_params: { name: f.get('name'), email: f.get('email'), subject: f.get('subject'), message: f.get('message') } }) });
+    if (!r.ok) throw new Error(await r.text());
+    form.reset(); status.textContent = 'Message sent. Thank you for reaching out.';
+  } catch (err) {
+    console.warn('contact form', err); status.textContent = "That didn't send. Try again, or use one of the links below.";
+  }
+  btn.disabled = false;
+});
 addEventListener('popstate', () => show(idFromUrl(), false));
 addEventListener('keydown', (e) => {
   if (e.key !== 'Escape' || body.dataset.view !== '3d') return;

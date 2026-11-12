@@ -20,3 +20,4 @@ npm run build    # static site in dist/; also validates every entry
 - Pages and log view: `src/layouts/Shell.astro`, `src/components/Entry.astro`, `src/styles/site.css`.
 - 3D map: `src/scripts/scene.ts` and `src/scripts/shaders.ts`, loaded only when the 3D view is opened.
 - `SITE` and `BASE` environment variables set the public URL and sub-path at build time.
+- Contact form: set `PUBLIC_EMAILJS_SERVICE`, `PUBLIC_EMAILJS_TEMPLATE` and `PUBLIC_EMAILJS_PK` at build time (the same EmailJS values the old site used). Without them the form is left out and only the links show.

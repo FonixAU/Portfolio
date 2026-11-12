@@ -6,14 +6,30 @@ const hexv = [0, 1, 2, 3, 4, 5].map((i) => [Math.cos((i * Math.PI) / 3) * 42, Ma
 const f = (n: number) => n.toFixed(1);
 const shade = '<circle r="40" fill="url(#shade)"/>';
 
+// The sun, drawn once: a slightly wobbly disc with flat patches, after the Outer Wilds ship log.
+const sunArt = (() => {
+  let h = 20261113;
+  const R = () => ((h = Math.imul(h ^ (h >>> 15), 2246822507) ^ Math.imul(h ^ (h >>> 13), 3266489909)) >>> 0) / 4294967296;
+  const blob = (cx: number, cy: number, r: number, n = 9, j = 0.6) => {
+    const p = Array.from({ length: n }, (_, i) => { const a = (i / n) * 6.2832, k = r * (1 - j / 2 + R() * j); return [cx + Math.cos(a) * k, cy + Math.sin(a) * k]; });
+    return p.map((a, i) => { const b = p[(i + 1) % n], z = p[(i + n - 1) % n]; return `${i ? '' : `M${f((z[0] + a[0]) / 2)} ${f((z[1] + a[1]) / 2)}`}Q${f(a[0])} ${f(a[1])} ${f((a[0] + b[0]) / 2)} ${f((a[1] + b[1]) / 2)}`; }).join('') + 'Z';
+  };
+  const layer = (count: number, rmin: number, rmax: number, spread: number, fill: string) => {
+    let d = '';
+    for (let i = 0; i < count; i++) { const a = R() * 6.2832, q = Math.sqrt(R()) * spread; d += blob(Math.cos(a) * q, Math.sin(a) * q, rmin + R() * (rmax - rmin)); }
+    return `<path d="${d}" fill="${fill}"/>`;
+  };
+  return `<path d="${blob(0, 0, 51, 30, 0.07)}" fill="#c9360f"/><g clip-path="url(#sunClip)"><circle r="48" fill="#e2501a"/>`
+    + layer(11, 11, 20, 40, '#f4701e') + layer(12, 6, 12, 40, '#ff9a28') + layer(9, 3, 6.5, 38, '#ffc94a') + layer(6, 2.5, 5, 40, '#a92a0a') + '</g>';
+})();
+
 export function icon(b: IconBody): string {
   const [A, B, C] = b.body?.palette ?? ['#6b6964', '#a7a59c', '#3d3d3a'];
   const rock = `<polygon points="${rockPts}" fill="${A}"/><polygon points="-8,-40 26,-30 4,-4" fill="${B}"/><polygon points="40,-2 28,30 4,-4" fill="${C}" opacity=".85"/><polygon points="-36,20 -6,40 4,-4" fill="${B}" opacity=".35"/>`;
   const land = `<path d="M-30 -8q10 -14 22 -6t16 2q4 10 -8 14t-22 2z" fill="${B}"/><path d="M6 14q12 -6 20 2t-2 14q-14 4 -18 -6z" fill="${B}"/>`;
   const shape = b.kind === 'sun' ? 'sun' : b.parent ? 'moon' : b.kind === 'asteroid' ? 'rugged' : b.body?.shape ?? 'rugged';
   const art: Record<string, string> = {
-    sun: `<circle r="53" fill="url(#sunCorona)"/><circle r="40" fill="url(#sunDisc)"/><circle r="40" fill="#7a1c00" filter="url(#sunGrain)" opacity=".5"/>
-      <path d="M-33 -30q-14 -10 -6 -22M30 -34q16 -6 14 -20M40 18q16 6 12 20" fill="none" stroke="#ff7a20" stroke-width="2.5" stroke-linecap="round" opacity=".7"/>`,
+    sun: sunArt,
     world: `<circle r="46" fill="none" stroke="#7fc4ff" stroke-opacity=".5" stroke-width="3.5"/><circle r="40" fill="${A}"/>${land}<path d="M-22 -33a40 40 0 0 1 44 0q-22 9 -44 0z" fill="${C}"/>${shade}`,
     ocean: `<circle r="40" fill="${A}"/>${land}${shade}`,
     giant: `<g transform="rotate(-14)"><ellipse rx="34" ry="30" fill="${A}"/><path d="M-31 -10h62M-32 4h64M-26 17h52" stroke="${B}" stroke-width="5" stroke-linecap="round" opacity=".8"/><ellipse rx="34" ry="30" fill="url(#shade)"/><ellipse rx="50" ry="11" fill="none" stroke="${B}" stroke-width="4"/><ellipse rx="42" ry="8" fill="none" stroke="${C}" stroke-width="2"/></g>`,
@@ -35,7 +51,5 @@ export function icon(b: IconBody): string {
 /** Shared gradients and filters; include once per page. */
 export const iconDefs = `<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
 <radialGradient id="shade" cx=".34" cy=".3" r=".8"><stop offset="0" stop-color="#fff" stop-opacity=".14"/><stop offset=".5" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".62"/></radialGradient>
-<radialGradient id="sunDisc"><stop offset="0" stop-color="#fff3c4"/><stop offset=".5" stop-color="#ffb734"/><stop offset=".84" stop-color="#ff6412"/><stop offset="1" stop-color="#b82a00"/></radialGradient>
-<radialGradient id="sunCorona"><stop offset=".7" stop-color="#ff7a1e" stop-opacity=".7"/><stop offset=".85" stop-color="#ff5a10" stop-opacity=".25"/><stop offset="1" stop-color="#ff4a00" stop-opacity="0"/></radialGradient>
-<filter id="sunGrain" x="0" y="0" width="1" height="1"><feTurbulence type="fractalNoise" baseFrequency=".085" numOctaves="4" seed="7"/><feColorMatrix values="0 0 0 0 .48  0 0 0 0 .11  0 0 0 0 0  0 0 0 2.4 -1.05"/><feComposite in2="SourceGraphic" operator="in"/></filter>
+<clipPath id="sunClip"><circle r="47.5"/></clipPath>
 </defs></svg>`;

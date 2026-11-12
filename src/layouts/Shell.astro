@@ -19,7 +19,7 @@ const groups = [
   ...Object.entries(LANES).map(([k, name]) => ({ name, items: top.filter((b) => b.lane === k && b.kind !== 'asteroid') })),
   { name: 'Asteroid belt', items: top.filter((b) => b.kind === 'asteroid') },
 ].filter((g) => g.items.length);
-const px = (b: (typeof top)[number]) => (b.kind === 'sun' ? 132 : b.kind === 'asteroid' ? 26 : [50, 66, 88][(b.body?.size ?? 1) - 1]);
+const px = (b: (typeof top)[number]) => (b.kind === 'sun' ? 250 : b.kind === 'asteroid' ? 44 : [92, 104, 116][(b.body?.size ?? 1) - 1]);
 const title = current ? `${shown.title} · ${NAME}` : `${NAME} · Cloud and Platform Engineer`;
 const description = shown.what ?? `${NAME}'s portfolio, as a solar system you can explore.`;
 ---
@@ -71,7 +71,7 @@ const description = shown.what ?? `${NAME}'s portfolio, as a solar system you ca
               </a>
               {kidsOf(b.id).length > 0 && (
                 <div class="moons">{kidsOf(b.id).map((m) => (
-                  <a class="body" href={m.url} data-id={m.id} data-match={m.id} aria-current={m === shown ? 'page' : undefined} style="--s:22px" title={m.title}><Fragment set:html={icon(m)} /></a>
+                  <a class="body" href={m.url} data-id={m.id} data-match={m.id} aria-current={m === shown ? 'page' : undefined} style="--s:32px" title={m.title}><Fragment set:html={icon(m)} /></a>
                 ))}</div>
               )}
             </div>

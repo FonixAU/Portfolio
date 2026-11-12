@@ -43,6 +43,10 @@ Rules:
 - Never invent an outcome, a number or a date. Leave the field out and say so in the pull request.
 - Never add contact details, employer-confidential material or anything from a private repository the owner has not approved.
 
+## Images
+
+Put images in `public/images/<entry-slug>/` (at most 1400 pixels wide) and list them in `images` with honest alt text. They appear as a slideshow at the top of the entry.
+
 ## What is generated for you
 
 Every entry automatically gets its own page, a place in the log view, a body in the 3D map, a line in `/llms.txt` and a line in `/resume/`.
