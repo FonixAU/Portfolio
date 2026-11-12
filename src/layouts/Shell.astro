@@ -1,0 +1,105 @@
+---
+// The whole site is this one shell. Every URL ships the full log (all entries as real HTML);
+// the script only decides which entry is showing and, on capable devices, adds the 3D map.
+import '../styles/site.css';
+import Entry from '../components/Entry.astro';
+import { loadBodies, sceneData, LANES } from '../lib/bodies';
+import { icon, iconDefs } from '../lib/icon';
+interface Props { current?: string }
+const { current = '' } = Astro.props;
+const NAME = 'Felipe Ortiz';
+const bodies = await loadBodies();
+const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
+const shown = bodies.find((b) => b.id === (current || 'contact'))!;
+const top = bodies.filter((b) => !b.parent);
+const kidsOf = (id: string) => bodies.filter((b) => b.parent === id);
+const sun = top.filter((b) => b.kind === 'sun');
+const groups = [
+  { name: 'Home', items: sun },
+  ...Object.entries(LANES).map(([k, name]) => ({ name, items: top.filter((b) => b.lane === k && b.kind !== 'asteroid') })),
+  { name: 'Asteroid belt', items: top.filter((b) => b.kind === 'asteroid') },
+].filter((g) => g.items.length);
+const px = (b: (typeof top)[number]) => (b.kind === 'sun' ? 132 : b.kind === 'asteroid' ? 26 : [50, 66, 88][(b.body?.size ?? 1) - 1]);
+const title = current ? `${shown.title} · ${NAME}` : `${NAME} · Cloud and Platform Engineer`;
+const description = shown.what ?? `${NAME}'s portfolio, as a solar system you can explore.`;
+---
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{title}</title>
+<meta name="description" content={description}>
+<meta property="og:title" content={title}>
+<meta property="og:description" content={description}>
+<link rel="icon" type="image/svg+xml" href={`${base}favicon.svg`}>
+<link rel="alternate" type="text/plain" href={`${base}llms.txt`} title="Plain-text index">
+</head>
+<body data-view="log" data-sel={current} data-base={base} data-name={NAME} data-home={`${NAME} · Cloud and Platform Engineer`}>
+<Fragment set:html={iconDefs} />
+<canvas id="map" aria-hidden="true"></canvas>
+<div id="labels"></div>
+<svg id="brk" viewBox="0 0 100 100" aria-hidden="true"><g fill="none" stroke="#c9c7bd" stroke-width="1.6" stroke-linecap="round">
+<path d="M7 25A50 50 0 0 1 25 7"/><path d="M75 7A50 50 0 0 1 93 25"/><path d="M93 75A50 50 0 0 1 75 93"/><path d="M25 93A50 50 0 0 1 7 75"/></g></svg>
+
+<header id="top">
+  <nav id="crumb" aria-label="Location">
+    <a href={base} data-id="">System</a>
+    {current && shown.lane && <span> / {LANES[shown.lane]}</span>}
+    {current && shown.parent && <span> / <a href={`${base}${shown.parent}/`} data-id={shown.parent}>{bodies.find((b) => b.id === shown.parent)!.title}</a></span>}
+    {current && <span> / {shown.title}</span>}
+  </nav>
+  <div id="controls">
+    <a class="ctl" href={`${base}resume/`}>Résumé</a>
+    <button class="ctl js" id="motion" type="button" aria-pressed="true">Motion</button>
+    <span class="seg js" role="group" aria-label="View">
+      <button class="ctl" id="v3d" type="button" aria-pressed="false">3D map</button><button class="ctl" id="vlog" type="button" aria-pressed="true">Log</button>
+    </span>
+  </div>
+</header>
+
+<main id="log">
+  <h1 id="logtitle"><span>{shown.title}</span></h1>
+  <nav id="lineup" aria-label="System line-up">
+    {groups.map((g) => (
+      <div class="grp"><span class="cap">{g.name}</span>
+        <div class="row">
+          {g.items.map((b) => (
+            <div class="col">
+              <a class="body" href={b.kind === 'sun' ? base : b.url} data-id={b.kind === 'sun' ? '' : b.id} data-match={b.id} aria-current={b === shown ? 'page' : undefined} style={`--s:${px(b)}px`} title={b.title}>
+                <Fragment set:html={icon(b)} /><span class="nm">{b.label}</span>
+              </a>
+              {kidsOf(b.id).length > 0 && (
+                <div class="moons">{kidsOf(b.id).map((m) => (
+                  <a class="body" href={m.url} data-id={m.id} data-match={m.id} aria-current={m === shown ? 'page' : undefined} style="--s:22px" title={m.title}><Fragment set:html={icon(m)} /></a>
+                ))}</div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    ))}
+  </nav>
+  <nav id="list" aria-label="All entries">
+    <h2 class="hd">Entries</h2>
+    {groups.map((g) => (
+      <section><h3>{g.name}</h3>
+        <ul>{g.items.map((b) => (
+          <li><a href={b.kind === 'sun' ? base : b.url} data-id={b.kind === 'sun' ? '' : b.id} data-match={b.id} aria-current={b === shown ? 'page' : undefined}>{b.title}</a>
+            {kidsOf(b.id).length > 0 && <ul>{kidsOf(b.id).map((m) => <li><a href={m.url} data-id={m.id} data-match={m.id} aria-current={m === shown ? 'page' : undefined}>{m.title}</a></li>)}</ul>}
+          </li>
+        ))}</ul>
+      </section>
+    ))}
+  </nav>
+  <div id="entries">
+    <h2 class="hd">Log</h2>
+    {bodies.map((b) => <article class="entry" data-id={b.id} data-kind={b.kind} hidden={b !== shown}><Entry b={b} kids={kidsOf(b.id)} /></article>)}
+  </div>
+</main>
+
+<div id="hints" aria-hidden="true">Drag to rotate<br>Scroll or pinch to zoom<br>Esc to go back</div>
+<script type="application/json" id="scene" set:html={JSON.stringify(sceneData(bodies))}></script>
+<script>import '../scripts/app.ts';</script>
+</body>
+</html>
