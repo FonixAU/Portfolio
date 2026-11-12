@@ -1,0 +1,8 @@
+---
+import Shell from '../layouts/Shell.astro';
+import { loadBodies } from '../lib/bodies';
+export async function getStaticPaths() {
+  return (await loadBodies()).map((b) => ({ params: { slug: b.id } }));
+}
+---
+<Shell current={Astro.params.slug} />

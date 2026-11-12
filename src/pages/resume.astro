@@ -1,0 +1,46 @@
+---
+// One printable page, generated from the same entries as the map.
+import { loadBodies } from '../lib/bodies';
+const bodies = await loadBodies();
+const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
+const sun = bodies.find((b) => b.kind === 'sun')!;
+const jobs = bodies.filter((b) => b.kind === 'employer');
+const projects = bodies.filter((b) => b.kind === 'project');
+const kids = (id: string) => bodies.filter((b) => b.parent === id);
+const counts = new Map<string, number>();
+for (const b of bodies) for (const s of b.stack) counts.set(s, (counts.get(s) ?? 0) + 1);
+const skills = [...counts].sort((x, y) => y[1] - x[1] || x[0].localeCompare(y[0])).map(([s]) => s);
+---
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Felipe Ortiz · Résumé</title>
+<style>
+  body{font:15px/1.5 system-ui,sans-serif;color:#1a1a18;background:#fff;max-width:760px;margin:0 auto;padding:32px 24px}
+  h1{font-size:28px;margin:0} h2{font-size:13px;letter-spacing:.1em;text-transform:uppercase;border-bottom:1px solid #bbb;padding-bottom:4px;margin:24px 0 10px}
+  h3{font-size:16px;margin:14px 0 2px} h4{font-size:14px;margin:10px 0 2px} p{margin:0 0 6px} ul{margin:4px 0 8px;padding-left:20px}
+  .sub{color:#555} .when{color:#555;font-weight:400} a{color:inherit} nav{margin-bottom:16px;font-size:13px}
+  @media print{nav{display:none} body{padding:0;font-size:12px}}
+</style>
+</head>
+<body>
+<nav><a href={base}>Back to the map</a></nav>
+<h1>Felipe Ortiz</h1>
+<p class="sub">Cloud and Platform Engineer</p>
+<p set:html={sun.entry.rendered?.html ?? ''} />
+<h2>Experience</h2>
+{jobs.map((j) => (
+  <section>
+    <h3>{j.title} <span class="when">· {j.what} · {j.when}</span></h3>
+    {j.achievements.length > 0 && <ul>{j.achievements.map((a) => <li>{a}</li>)}</ul>}
+    {kids(j.id).map((r) => (<><h4>{r.title} <span class="when">· {r.when}</span></h4><Fragment set:html={r.entry.rendered?.html ?? ''} /></>))}
+    {kids(j.id).length === 0 && <Fragment set:html={j.entry.rendered?.html ?? ''} />}
+  </section>
+))}
+<h2>Projects</h2>
+<ul>{projects.map((p) => <li><strong>{p.title}</strong>{p.what && `: ${p.what}`}{p.stack.length > 0 && <span class="sub"> ({p.stack.join(', ')})</span>}</li>)}</ul>
+<h2>Skills</h2>
+<p>{skills.join(' · ')}</p>
+</body>
+</html>
