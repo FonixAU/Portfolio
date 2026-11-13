@@ -20,7 +20,7 @@ const groups = [
   ...Object.entries(LANES).map(([k, name]) => ({ name, items: top.filter((b) => b.lane === k && b.kind !== 'asteroid') })),
   { name: BELT, items: top.filter((b) => b.kind === 'asteroid') },
 ].filter((g) => g.items.length);
-const px = (b: (typeof top)[number]) => (b.kind === 'sun' ? 204 : b.kind === 'asteroid' ? 46 : [98, 110, 122][(b.body?.size ?? 1) - 1]);
+const px = (b: (typeof top)[number]) => (b.kind === 'sun' ? 178 : b.kind === 'asteroid' ? 46 : [98, 110, 122][(b.body?.size ?? 1) - 1]);
 const title = current ? `${shown.title} · ${NAME}` : `${NAME} · Cloud and Platform Engineer`;
 const description = shown.what ?? `${NAME}'s portfolio, as a solar system you can explore.`;
 ---
