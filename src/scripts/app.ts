@@ -19,12 +19,19 @@ let scene: Scene | null = null, sceneFailed = false;
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 let motion = (store.get('motion') ?? (reduced ? 'off' : 'on')) === 'on';
 
+/** The entry list as a drawer (phones, and the 3D view). */
+function setMenu(open: boolean) {
+  if (open) body.dataset.menu = ''; else delete body.dataset.menu;
+  $('menu').setAttribute('aria-expanded', String(open));
+}
+
 /** Show an entry. '' is the whole system. */
 function show(id: string, push = true) {
   if (id && !byId.has(id)) id = '';
   const b = byId.get(id), shown = id || 'contact';
   body.dataset.sel = id;
   delete body.dataset.open;
+  setMenu(false);
   doc.querySelectorAll<HTMLElement>('.entry').forEach((a) => (a.hidden = a.dataset.id !== shown));
   doc.querySelectorAll<HTMLElement>('[data-match]').forEach((a) => (a.dataset.match === shown ? a.setAttribute('aria-current', 'page') : a.removeAttribute('aria-current')));
   $('logtitle').firstElementChild!.textContent = byId.get(shown)!.title;
@@ -86,12 +93,15 @@ doc.addEventListener('submit', async (e) => {
 });
 addEventListener('popstate', () => show(idFromUrl(), false));
 addEventListener('keydown', (e) => {
-  if (e.key !== 'Escape' || body.dataset.view !== '3d') return;
+  if (e.key !== 'Escape') return;
+  if ('menu' in body.dataset) { setMenu(false); $('menu').focus(); return; }
+  if (body.dataset.view !== '3d') return;
   if ('open' in body.dataset) delete body.dataset.open;
   else if (body.dataset.sel) show(byId.get(body.dataset.sel)!.parent ?? '');
 });
 doc.addEventListener('pick', (e) => show((e as CustomEvent<string>).detail)); // a body was clicked in the 3D map
 
+$('menu').onclick = () => { const open = !('menu' in body.dataset); setMenu(open); if (open) doc.querySelector<HTMLElement>('#list [aria-current], #list a')?.focus(); };
 $('v3d').onclick = () => setView('3d');
 $('vlog').onclick = () => setView('log');
 const motionBtn = $('motion');

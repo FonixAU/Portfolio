@@ -44,6 +44,7 @@ const description = shown.what ?? `${NAME}'s portfolio, as a solar system you ca
 <path d="M7 25A50 50 0 0 1 25 7"/><path d="M75 7A50 50 0 0 1 93 25"/><path d="M93 75A50 50 0 0 1 75 93"/><path d="M25 93A50 50 0 0 1 7 75"/></g></svg>
 
 <header id="top">
+  <button class="ctl js" id="menu" type="button" aria-expanded="false" aria-controls="list">Menu</button>
   <nav id="crumb" aria-label="Location">
     <a href={base} data-id="">System</a>
     {current && shown.lane && <span> / {LANES[shown.lane]}</span>}
@@ -93,6 +94,7 @@ const description = shown.what ?? `${NAME}'s portfolio, as a solar system you ca
         ))}</ul>
       </section>
     ))}
+    <p class="more"><a href={`${base}resume/`}>Résumé</a></p>
   </nav>
   <div id="entries">
     <h2 class="hd">Log</h2>
