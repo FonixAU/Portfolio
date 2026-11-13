@@ -37,27 +37,34 @@ html.js body[data-view="3d"] #menu { display: inline-block; }
 #logtitle::after { content: ""; flex: 1; height: 1px; background: var(--rule); }
 .hd { margin: 0; padding: 7px 12px; font: 500 11px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--green); border-bottom: 1px solid var(--rule); background: rgba(var(--blue), .06); }
 
-#lineup { --k: 1; --rowh: calc(176px * var(--k)); grid-column: 1 / -1; position: relative; display: flex; gap: 30px; overflow: auto hidden; padding: 14px 22px 16px; border: 1px solid var(--rule); background: rgba(4, 9, 16, .55); }
-#lineup::before { content: ""; position: absolute; left: 0; right: 0; top: calc(38px + var(--rowh) / 2); min-width: 100%; border-top: 1px dashed rgba(var(--blue), .28); } /* the axis every body sits on */
+/* The line-up. Three rows: lane caption, names, bodies. Every body is centred on one axis; moons ride an orbit round their planet. */
+#lineup { --k: 1; --pt: 14px; --nmh: 24px; --rowh: calc(236px * var(--k)); grid-column: 1 / -1; position: relative; display: flex; gap: calc(34px * var(--k)); overflow: auto hidden;
+  padding: var(--pt) 22px 16px; border: 1px solid var(--rule); background: rgba(4, 9, 16, .55); }
+#lineup::before { content: ""; position: absolute; left: 0; right: 0; top: calc(var(--pt) + 26px + var(--nmh) + var(--rowh) / 2); border-top: 1px dashed rgba(var(--blue), .28); }
 .grp { flex: none; }
-.cap { display: block; height: 24px; font: 500 10px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--dim); border-left: 1px solid var(--rule); padding-left: 8px; }
-.row { display: flex; gap: 18px; }
-.col { position: relative; display: grid; grid-template-rows: var(--rowh) auto; justify-items: center; min-width: calc(120px * var(--k)); }
-.grp:last-child .col { min-width: calc(48px * var(--k)); }
-.grp:first-child .col { min-width: calc(160px * var(--k)); justify-items: start; }
-.grp:first-child .body { margin-left: calc(-62px * var(--k)); top: calc(22px * var(--k)); } /* sits a little low, leaving room for its name above like the others */
-.grp:first-child .nm { left: calc(50% + 31px * var(--k)); } /* centred over the part of the sun that is in view */
-.grp:first-child .cap { position: relative; z-index: 1; }
-.body { position: relative; align-self: center; top: 8px; /* room for the name above */ display: block; width: calc(var(--s) * var(--k)); height: calc(var(--s) * var(--k)); border-radius: 50%; text-decoration: none; opacity: .8; transition: opacity .15s, transform .2s; }
+.cap { display: block; height: 26px; font: 500 10px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--dim); border-left: 1px solid var(--rule); padding-left: 8px; }
+.row { display: flex; gap: calc(22px * var(--k)); }
+.col { --pad: 24px; --r: calc((var(--s) / 2 + 30px) * var(--k)); --m: max(calc(32px * var(--k)), 24px);
+  display: grid; grid-template-rows: var(--nmh) var(--rowh); justify-items: center; width: calc((var(--s) + var(--pad)) * var(--k)); }
+.col.has-moons { --pad: 100px; }
+.nm { align-self: end; padding-bottom: 4px; max-width: calc(100% + 18px); text-align: center; text-wrap: balance; font: 10px/1.2 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--dim); }
+.col:has(.main[aria-current]) .nm { color: var(--ink); }
+.orbit { position: relative; width: 100%; height: 100%; }
+.has-moons .orbit::before { content: ""; position: absolute; left: 50%; top: 50%; width: calc(2 * var(--r)); height: calc(2 * var(--r)); transform: translate(-50%, -50%); border: 1px dashed rgba(var(--blue), .3); border-radius: 50%; }
+.body { --d: calc(var(--s) * var(--k)); position: absolute; left: 50%; top: 50%; width: var(--d); height: var(--d); margin: calc(var(--d) / -2) 0 0 calc(var(--d) / -2); display: block; border-radius: 50%; text-decoration: none; opacity: .85; transition: opacity .15s, transform .2s; }
 .body svg { display: block; width: 100%; height: 100%; overflow: visible; }
 .body:hover { opacity: 1; }
-.body[aria-current] { opacity: 1; transform: scale(1.14); box-shadow: 0 0 0 2px #cfeaff, 0 0 22px 5px rgba(120, 190, 255, .45); }
-.nm { position: absolute; left: 50%; bottom: calc(100% + 7px); transform: translateX(-50%); white-space: nowrap; font: 10px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--dim); }
-.body[aria-current] .nm { color: var(--ink); }
-.grp:last-child .nm { display: none; }
-.grp:last-child .body:is(:hover, :focus-visible, [aria-current]) .nm { display: block; z-index: 1; background: var(--bg); padding: 1px 5px; }
-.moons { display: flex; gap: 7px; padding-top: 2px; }
-.moons .body { opacity: .7; }
+.body[aria-current] { opacity: 1; box-shadow: 0 0 0 2px #cfeaff, 0 0 22px 5px rgba(120, 190, 255, .45); }
+.body.main[aria-current] { transform: scale(1.08); }
+.body.moon { --d: var(--m); left: calc(50% + var(--r) * cos(var(--a))); top: calc(50% + var(--r) * sin(var(--a))); background: #060d16; /* hides the orbit line behind it */ }
+/* the sun is cropped by the left edge, as in the Outer Wilds ship log */
+.home .col { width: calc(128px * var(--k)); }
+.home .body { left: calc(100% - var(--d) / 2); }
+/* minor works: two rows of rocks, each with its name beneath */
+.belt .row { display: grid; grid-template-rows: repeat(2, 1fr); grid-auto-flow: column; height: calc(var(--nmh) + var(--rowh)); gap: 0 calc(12px * var(--k)); }
+.belt .col { grid-template-rows: auto auto; align-content: center; width: max(calc(108px * var(--k)), 94px); }
+.belt .orbit { order: -1; height: calc(var(--s) * var(--k) + 12px); }
+.belt .nm { align-self: start; padding: 0; max-width: 100%; }
 
 #list, #entries { border: 1px solid var(--rule); background: rgba(4, 9, 16, .55); }
 #list { max-height: calc(100vh - 330px); min-height: 220px; overflow: auto; }
@@ -139,10 +146,8 @@ body[data-view="3d"][data-open] .full { grid-template-columns: 1fr; }
   .ctl { padding: 9px 10px; }                                  /* comfortable to tap */
   #log { display: block; padding: 54px 0 20px; }
   #logtitle { margin: 0 12px 10px; font-size: 20px; }
-  #lineup { --k: .58; gap: 16px; padding: 10px 12px 12px; border-width: 1px 0; scroll-snap-type: x proximity; }
-  .col { scroll-snap-align: center; }
+  #lineup { --k: .62; --pt: 10px; --nmh: 28px; padding-inline: 12px; border-width: 1px 0; }
   .nm { font-size: 9px; }
-  .moons .body { --s: 44px !important; }                       /* 26 px drawn, with room to tap */
   html.js #list { display: none; }                             /* behind the Menu button */
   html:not(.js) #list { margin: 12px; max-height: none; }
   html.js body[data-menu] #list { width: 100vw; border-right: 0; }
@@ -161,6 +166,6 @@ body[data-view="3d"][data-open] .full { grid-template-columns: 1fr; }
   body[data-view="3d"]:not([data-open]) .entry { left: 10px; right: 10px; top: auto; bottom: 10px; width: auto; }
   body[data-view="3d"][data-open] .entry { left: 0; right: 0; top: 50px; bottom: 0; width: auto; }
 }
-@media (min-width: 480px) and (max-width: 760px) { #lineup { --k: .7; } .entry { padding: 16px 20px 20px; } #logtitle { margin-inline: 20px; } }
-@media (min-width: 761px) and (max-width: 1100px) { #log { grid-template-columns: 210px minmax(0, 1fr); } #lineup { --k: .85; } }
+@media (min-width: 480px) and (max-width: 760px) { #lineup { --k: .72; } .entry { padding: 16px 20px 20px; } #logtitle { margin-inline: 20px; } }
+@media (min-width: 761px) and (max-width: 1100px) { #log { grid-template-columns: 210px minmax(0, 1fr); } #lineup { --k: .82; } }
 @media (prefers-reduced-motion: reduce) { .body, .entry, #map { transition: none; animation: none !important; } }

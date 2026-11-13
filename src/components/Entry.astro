@@ -11,7 +11,9 @@ const status = { live: 'Live', 'in-progress': 'In progress', archived: 'Archived
 const hasText = Boolean(b.entry.body?.trim());
 const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
 // The contact form posts to EmailJS, using the same service and template as the old site. Set the three PUBLIC_EMAILJS_* variables at build time to switch it on.
-const mail = { service: import.meta.env.PUBLIC_EMAILJS_SERVICE, template: import.meta.env.PUBLIC_EMAILJS_TEMPLATE, key: import.meta.env.PUBLIC_EMAILJS_PK };
+const env = (k: string) => import.meta.env[`PUBLIC_EMAILJS_${k}`] ?? process.env[`PUBLIC_EMAILJS_${k}`] ?? process.env[`NEXT_PUBLIC_EMAILJS_${k}`] ?? process.env[`EMAILJS_${k}`];
+const mail = { service: env('SERVICE'), template: env('TEMPLATE'), key: env('PK') };
+if (b.kind === 'sun' && !(globalThis as any).__mailLogged && ((globalThis as any).__mailLogged = true)) console.log(`[contact form] ${mail.service && mail.template && mail.key ? 'enabled' : 'disabled: missing ' + ['SERVICE', 'TEMPLATE', 'PK'].filter((k) => !env(k)).join(', ')}; EmailJS variables present: ${Object.keys(process.env).filter((k) => k.includes('EMAILJS')).join(', ') || 'none'}`);
 const mailOn = b.kind === 'sun' && mail.service && mail.template && mail.key;
 ---
 <div class="summary">

@@ -20,6 +20,8 @@ const groups = [
   ...Object.entries(LANES).map(([k, name]) => ({ name, items: top.filter((b) => b.lane === k && b.kind !== 'asteroid') })),
   { name: BELT, items: top.filter((b) => b.kind === 'asteroid') },
 ].filter((g) => g.items.length);
+// Moons sit on an orbit round their planet: the first at the bottom, then alternating right and left.
+const moonAngle = (i: number) => 90 + (i % 2 ? -1 : 1) * 44 * Math.ceil(i / 2);
 const px = (b: (typeof top)[number]) => (b.kind === 'sun' ? 178 : b.kind === 'asteroid' ? 46 : [98, 110, 122][(b.body?.size ?? 1) - 1]);
 const title = current ? `${shown.title} · ${NAME}` : `${NAME} · Cloud and Platform Engineer`;
 const description = shown.what ?? `${NAME}'s portfolio, as a solar system you can explore.`;
@@ -64,19 +66,18 @@ const description = shown.what ?? `${NAME}'s portfolio, as a solar system you ca
 <main id="log">
   <h1 id="logtitle"><span>{shown.title}</span></h1>
   <nav id="lineup" aria-label="System line-up">
-    {groups.map((g) => (
-      <div class="grp"><span class="cap">{g.name}</span>
+    {groups.map((g, gi) => (
+      <div class:list={['grp', gi === 0 && 'home', g.name === BELT && 'belt']}><span class="cap">{g.name}</span>
         <div class="row">
           {g.items.map((b) => (
-            <div class="col">
-              <a class="body" href={b.kind === 'sun' ? base : b.url} data-id={b.kind === 'sun' ? '' : b.id} data-match={b.id} aria-current={b === shown ? 'page' : undefined} style={`--s:${px(b)}px`} title={b.title}>
-                <Fragment set:html={icon(b)} /><span class="nm">{b.label}</span>
-              </a>
-              {kidsOf(b.id).length > 0 && (
-                <div class="moons">{kidsOf(b.id).map((m) => (
-                  <a class="body" href={m.url} data-id={m.id} data-match={m.id} aria-current={m === shown ? 'page' : undefined} style="--s:32px" title={m.title}><Fragment set:html={icon(m)} /></a>
-                ))}</div>
-              )}
+            <div class:list={['col', kidsOf(b.id).length > 0 && 'has-moons']} style={`--s:${px(b)}px`}>
+              <span class="nm" aria-hidden="true">{b.label}</span>
+              <div class="orbit">
+                <a class="body main" href={b.kind === 'sun' ? base : b.url} data-id={b.kind === 'sun' ? '' : b.id} data-match={b.id} aria-current={b === shown ? 'page' : undefined} aria-label={b.title} title={b.title}><Fragment set:html={icon(b)} /></a>
+                {kidsOf(b.id).map((m, mi) => (
+                  <a class="body moon" href={m.url} data-id={m.id} data-match={m.id} aria-current={m === shown ? 'page' : undefined} aria-label={m.title} title={m.title} style={`--a:${moonAngle(mi)}deg`}><Fragment set:html={icon(m)} /></a>
+                ))}
+              </div>
             </div>
           ))}
         </div>
