@@ -15,7 +15,7 @@ const LANE_TINT = { career: 0xfac775, projects: 0x9fe1cb, games: 0xcecbf6 };
 const SURFACE = { world: 2, ocean: 2, giant: 1, crystal: 4, twin: 0, rugged: 0, holo: 0, shattered: 0, molten: 3, comet: 0 }; // shader surface per shape
 const GREY = [0x5f5e5a, 0x9a988f, 0x2c2c2a], MOON = [0x777570, 0xb4b2a9, 0x444441];
 const UP = new THREE.Vector3(0, 1, 0), SYS = 100;
-const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+const ease = (t) => 1 - Math.pow(1 - t, 3); // starts moving at once, lands softly
 
 export function createScene({ canvas, labels, brk, bodies, motion }) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
@@ -171,28 +171,40 @@ export function createScene({ canvas, labels, brk, bodies, motion }) {
     if (motion && running) {
       // fly there: eased, pulling back a little mid-way so the trip reads as travel
       const travel = cam.target.distanceTo(dest(wp));
-      fly = { t: 0, dur: Math.min(2.4, 1.1 + travel / 55), fromT: cam.target.clone(), fromD: cam.dist, arc: Math.min(34, travel * 0.3) };
+      fly = { t: 0, dur: Math.min(1.9, 0.85 + travel / 70), fromT: cam.target.clone(), fromD: cam.dist, arc: Math.min(34, travel * 0.3) };
     } else {
       fly = null; dest(cam.target); cam.dist = cam.goal;
       canvas.classList.remove('cut'); void canvas.offsetWidth; canvas.classList.add('cut'); // motion off: a short fade, no travel
     }
   }
 
-  const ptrs = new Map(); let moved = 0, pinch = 0;
+  // Picking is done in screen space, not against the geometry: every visible body gets a hit circle of at least
+  // 24 px (34 px for touch), so small, distant, moving or oddly shaped bodies are as easy to hit as large ones.
+  // The closest match relative to its own circle wins, so a planet in front of the sun beats the sun.
+  function hitAt(x, y, touch) {
+    let best = null, bestScore = 1;
+    for (const b of B) {
+      if (!b.hit) continue;
+      const score = Math.hypot(x - b.sx, y - b.sy) / Math.max(b.pr * 1.15, touch ? 34 : 24);
+      if (score < bestScore) { bestScore = score; best = b; }
+    }
+    return best;
+  }
+  const ptrs = new Map(); let moved = 0, pinch = 0, downX = 0, downY = 0;
   const zoom = (f) => { fly = null; cam.goal = Math.min(280, Math.max(sel ? sel.r * 2.6 : 14, cam.goal * f)); };
-  canvas.addEventListener('pointerdown', (e) => { canvas.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, e); moved = 0; pinch = 0; });
+  canvas.addEventListener('pointerdown', (e) => { canvas.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, e); moved = 0; pinch = 0; downX = e.clientX; downY = e.clientY; });
+  canvas.addEventListener('pointermove', (e) => { if (!ptrs.size && e.pointerType === 'mouse') canvas.style.cursor = hitAt(e.clientX, e.clientY, false) ? 'pointer' : 'grab'; });
   canvas.addEventListener('pointermove', (e) => {
     const p = ptrs.get(e.pointerId); if (!p) return;
-    if (ptrs.size === 1) { cam.yaw -= (e.clientX - p.clientX) * 0.005; cam.pitch = Math.min(1.45, Math.max(0.06, cam.pitch + (e.clientY - p.clientY) * 0.004)); moved += Math.abs(e.clientX - p.clientX) + Math.abs(e.clientY - p.clientY); }
+    if (ptrs.size === 1) { cam.yaw -= (e.clientX - p.clientX) * 0.005; cam.pitch = Math.min(1.45, Math.max(0.06, cam.pitch + (e.clientY - p.clientY) * 0.004)); moved = Math.max(moved, Math.hypot(e.clientX - downX, e.clientY - downY)); }
     ptrs.set(e.pointerId, e);
     if (ptrs.size === 2) { const [a, b] = [...ptrs.values()], d = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY); if (pinch) zoom(pinch / d); pinch = d; moved = 99; }
   });
   const up = (e) => {
-    if (!ptrs.delete(e.pointerId) || moved >= 5 || e.type !== 'pointerup') return;
-    const r = canvas.getBoundingClientRect(), rc = new THREE.Raycaster();
-    rc.setFromCamera(v.set((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1, 0), camera);
-    const h = rc.intersectObjects(pick)[0];
-    if (h) document.dispatchEvent(new CustomEvent('pick', { detail: h.object.userData.b.id }));
+    const touch = e.pointerType !== 'mouse';
+    if (!ptrs.delete(e.pointerId) || moved >= (touch ? 12 : 6) || e.type !== 'pointerup') return; // a small wobble is still a click
+    const h = hitAt(e.clientX, e.clientY, touch);
+    if (h && h !== sel) document.dispatchEvent(new CustomEvent('pick', { detail: h.id }));
   };
   canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up);
   canvas.addEventListener('wheel', (e) => { e.preventDefault(); zoom(Math.exp(e.deltaY * 0.0012)); }, { passive: false });
@@ -233,7 +245,8 @@ export function createScene({ canvas, labels, brk, bodies, motion }) {
     for (const b of B) {
       b.mesh.getWorldPosition(v); const d = v.distanceTo(camera.position); v.project(camera);
       const x = (v.x + 1) / 2 * W, y = (1 - v.y) / 2 * H; b.sx = x; b.sy = y; b.pr = b.r * f / d;
-      const vis = v.z < 1 && b !== sel && (!b.parent || (sel && (sel.id === b.parent || sel.parent === b.parent))) && !(open && x < 480) && !(y < 56 && x > W - 420) && (b.kind !== 'asteroid' || cam.dist < SYS * 1.7);
+      b.hit = v.z < 1 && (!b.parent || (sel && (sel.id === b.parent || sel.parent === b.parent))) && (b.kind !== 'asteroid' || cam.dist < SYS * 1.7);
+      const vis = b.hit && b !== sel && !(open && x < 480) && !(y < 56 && x > W - 420);
       b.el.style.display = vis ? '' : 'none';
       if (vis) b.el.style.transform = `translate(${(x + Math.max(8, b.pr + 6)).toFixed(1)}px,${y.toFixed(1)}px) translate(0,-50%)`;
     }
