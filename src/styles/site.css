@@ -137,6 +137,34 @@ body[data-view="3d"][data-open] .close { display: inline-block; float: right; ma
 body[data-view="3d"][data-open] .full { grid-template-columns: 1fr; }
 
 /* ---------- small screens: designed at 360 px wide, then loosened as the screen grows ---------- */
+.desc { display: contents; }
+/* Desktop: the open entry is a ship-computer screen over the map. Title bar; facts top left, parts list lower left, picture right, text in a box along the bottom. */
+@media (min-width: 900px) {
+  body[data-view="3d"][data-open] .entry { inset: 64px 0 28px; margin: auto; width: min(1180px, calc(100vw - 80px)); height: min(780px, calc(100vh - 92px)); overflow: hidden; padding: 0 14px 14px;
+    display: grid; gap: 12px; grid-template: "bar close" auto "info shots" auto "sub shots" minmax(0, 1fr) "links shots" auto "desc desc" fit-content(36%) / 330px minmax(0, 1fr); background-color: rgba(5, 12, 21, .96);
+    border-color: rgba(var(--blue), .7); box-shadow: 0 0 0 1px #02050a, 0 0 60px rgba(var(--blue), .18); }
+  body[data-view="3d"][data-open] .entry[hidden] { display: none; }
+  body[data-view="3d"][data-open] .entry:not(:has(.shots)) { grid-template: "bar close" auto "info sub" auto "links sub" auto "desc desc" auto / minmax(0, 1fr) minmax(0, 1fr); height: fit-content; max-height: calc(100vh - 92px); width: min(860px, calc(100vw - 80px)); }
+  body[data-view="3d"][data-open] :is(.summary, .full) { display: contents; }
+  body[data-view="3d"][data-open] .entry h2 { grid-area: 1 / 1 / 2 / -1; margin: 0 -14px; padding: 10px 14px; border-bottom: 1px solid var(--rule); background: rgba(var(--blue), .1); }
+  body[data-view="3d"][data-open] .close { grid-area: close; z-index: 1; float: none; margin: 0; align-self: center; justify-self: end; }
+  body[data-view="3d"][data-open] .info { grid-area: info; }
+  body[data-view="3d"][data-open] .links { grid-area: links; }
+  body[data-view="3d"][data-open] :is(.sub, .desc, .shots) { border: 1px solid var(--rule); background: rgba(4, 9, 16, .6); min-height: 0; }
+  body[data-view="3d"][data-open] .sub { grid-area: sub; overflow: auto; align-self: end; max-height: 100%; }
+  body[data-view="3d"][data-open] .entry:not(:has(.shots)) .sub { align-self: start; grid-row: 2 / 4; }
+  body[data-view="3d"][data-open] .sub h3 { margin: 0; padding: 7px 12px; color: var(--green); border-bottom: 1px solid var(--rule); background: rgba(var(--blue), .06); }
+  body[data-view="3d"][data-open] .kids { margin: 0; }
+  body[data-view="3d"][data-open] .kids li { padding: 7px 12px; border-bottom: 1px solid rgba(var(--blue), .12); }
+  body[data-view="3d"][data-open] .kids li::before { content: "\25B8"; color: var(--green); margin-right: 8px; }
+  body[data-view="3d"][data-open] .shots { grid-area: shots; padding: 0; gap: 0; }
+  body[data-view="3d"][data-open] .shots img { width: 100%; height: 100%; aspect-ratio: auto; border: 0; }
+  body[data-view="3d"][data-open] .desc { grid-area: desc; display: block; overflow: auto; padding: 12px 16px; columns: 2 380px; column-gap: 36px; }
+  body[data-view="3d"][data-open] .desc section { break-inside: avoid; }
+  body[data-view="3d"][data-open] .desc:not(:has(section)) { display: none; }
+  body[data-view="3d"][data-open] .prose p { max-width: none; }
+}
+
 @media (max-width: 760px) {
   body { font-size: 16px; }
   #top { padding: 8px 10px; gap: 8px; background: linear-gradient(#04070c 60%, transparent); }

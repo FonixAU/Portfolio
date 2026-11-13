@@ -18,9 +18,11 @@ const mailOn = b.kind === 'sun' && mail.service && mail.template && mail.key;
 ---
 <div class="summary">
   <h2>{b.title}{status && <span class={`badge ${b.status}`}>{status}</span>}</h2>
-  {b.what && <p class="what">{b.what}</p>}
-  {(b.when || b.part) && <p class="meta">{[b.when, b.part].filter(Boolean).join(' · ')}</p>}
-  {b.stack.length > 0 && <ul class="tags">{b.stack.map((s) => <li>{s}</li>)}</ul>}
+  <div class="info">
+    {b.what && <p class="what">{b.what}</p>}
+    {(b.when || b.part) && <p class="meta">{[b.when, b.part].filter(Boolean).join(' · ')}</p>}
+    {b.stack.length > 0 && <ul class="tags">{b.stack.map((s) => <li>{s}</li>)}</ul>}
+  </div>
   <button class="btn open" type="button" data-open>{b.kind === 'sun' ? 'Get in touch' : 'Open entry'}</button>
 </div>
 <div class="full">
@@ -29,11 +31,12 @@ const mailOn = b.kind === 'sun' && mail.service && mail.template && mail.key;
     <figure class="shots">{b.images.map((im) => <img src={base + im.src.replace(/^\//, '')} alt={im.alt} loading="lazy" />)}</figure>
   )}
   {kids.length > 0 && (
-    <section><h3>{job ? 'Roles' : 'Parts'}</h3>
+    <section class="sub"><h3>{job ? 'Roles' : 'Parts'}</h3>
       <ul class="kids">{kids.map((k) => <li><a href={k.url} data-id={k.id}>{k.title}</a>{k.when && <span> · {k.when}</span>}</li>)}</ul>
     </section>
   )}
-  {hasText && <section><h3>{b.kind === 'sun' ? 'About' : job ? 'What I did' : 'What I built'}</h3><div class="prose"><Content /></div></section>}
+  <div class="desc">
+  {hasText && <section><div class="prose"><Content /></div></section>}
   {b.achievements.length > 0 && <section><h3>Achievements</h3><ul>{b.achievements.map((a) => <li>{a}</li>)}</ul></section>}
   {b.outcome && <section><h3>Outcome</h3><p>{b.outcome}</p></section>}
   {b.highlights.length > 0 && <section><h3>Highlights</h3><ul>{b.highlights.map((a) => <li>{a}</li>)}</ul></section>}
@@ -50,5 +53,6 @@ const mailOn = b.kind === 'sun' && mail.service && mail.template && mail.key;
       </form>
     </section>
   )}
+  </div>
   {b.links.length > 0 && <p class="links">{b.links.map((l) => <a class="btn" href={l.url}>{l.label}</a>)}</p>}
 </div>
