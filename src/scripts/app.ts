@@ -30,7 +30,7 @@ function show(id: string, push = true) {
   if (id && !byId.has(id)) id = '';
   const b = byId.get(id), shown = id || 'contact';
   body.dataset.sel = id;
-  delete body.dataset.open;
+  if (id && body.dataset.view !== '3d') body.dataset.open = ''; else delete body.dataset.open; // the log view goes straight to the full panel
   setMenu(false);
   doc.querySelectorAll<HTMLElement>('.entry').forEach((a) => (a.hidden = a.dataset.id !== shown));
   doc.querySelectorAll<HTMLElement>('[data-match]').forEach((a) => (a.dataset.match === shown ? a.setAttribute('aria-current', 'page') : a.removeAttribute('aria-current')));
@@ -60,9 +60,14 @@ async function setView(v: '3d' | 'log', remember = true) {
   $('v3d').setAttribute('aria-pressed', String(v === '3d'));
   $('vlog').setAttribute('aria-pressed', String(v === 'log'));
   if (remember) store.set('view', v);
+  if (v === 'log' && body.dataset.sel) body.dataset.open = ''; else delete body.dataset.open;
   if (v === '3d') { scene!.select(body.dataset.sel!); scene!.start(); } else scene?.stop();
 }
 
+function closePanel() {
+  delete body.dataset.open;
+  doc.querySelector<HTMLElement>(body.dataset.view === '3d' ? '.entry:not([hidden]) button[data-open]' : '#lineup .main[aria-current], #lineup .moon[aria-current]')?.focus();
+}
 doc.addEventListener('click', (ev) => {
   const e = ev as MouseEvent, t = e.target as HTMLElement;
   const a = t.closest<HTMLAnchorElement>('a[data-id]');
@@ -70,8 +75,9 @@ doc.addEventListener('click', (ev) => {
     e.preventDefault(); show(a.dataset.id!);
     return;
   }
-  if (t.closest('[data-open]')) { body.dataset.open = ''; doc.querySelector<HTMLElement>('.entry:not([hidden]) [data-close]')?.focus(); }
-  else if (t.closest('[data-close]')) { delete body.dataset.open; doc.querySelector<HTMLElement>('.entry:not([hidden]) [data-open]')?.focus(); }
+  // button[...]: the body itself carries data-open while a panel is open, so a bare [data-open] would match every click
+  if (t.closest('button[data-open]')) { body.dataset.open = ''; doc.querySelector<HTMLElement>('.entry:not([hidden]) [data-close]')?.focus(); }
+  else if (t.closest('button[data-close]')) closePanel();
 });
 doc.addEventListener('submit', async (e) => {
   const form = (e.target as HTMLElement).closest<HTMLFormElement>('form[data-mail]');
@@ -95,8 +101,8 @@ addEventListener('popstate', () => show(idFromUrl(), false));
 addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
   if ('menu' in body.dataset) { setMenu(false); $('menu').focus(); return; }
-  if (body.dataset.view !== '3d') return;
-  if ('open' in body.dataset) delete body.dataset.open;
+  if ('open' in body.dataset) closePanel();
+  else if (body.dataset.view !== '3d') return;
   else if (body.dataset.sel) show(byId.get(body.dataset.sel)!.parent ?? '');
 });
 doc.addEventListener('pick', (e) => show((e as CustomEvent<string>).detail)); // a body was clicked in the 3D map
@@ -111,5 +117,5 @@ motionBtn.onclick = () => { motion = !motion; store.set('motion', motion ? 'on' 
 // 3D by default only where it is likely to be pleasant: a roomy screen, WebGL 2, and no reduced-motion request.
 const capable = () => { try { return !!doc.createElement('canvas').getContext('webgl2'); } catch { return false; } };
 const want = store.get('view') ?? (!reduced && innerWidth >= 760 && capable() ? '3d' : 'log');
-if (want === '3d') setView('3d', false);
+setView(want === '3d' ? '3d' : 'log', false);
 (window as any).__ready = true;
