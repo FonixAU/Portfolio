@@ -1,0 +1,39 @@
+# Felipe Ortiz
+
+> Felipe Ortiz. Cloud and Platform Engineer.
+
+Hands-on with troubleshooting, infrastructure as code and multi-OS environments. Passionate about automation, continuous improvement and the people on the other end of the work.
+
+## Career
+- [Linfox](https://fonixau.github.io/Portfolio/site/linfox/): Cloud and Platform Engineer (2022 to present) [AWS, Azure, Ansible, PowerShell, Terraform]
+  - [Cloud and Platform Engineer](https://fonixau.github.io/Portfolio/site/linfox/cloud-platform/): Hybrid infrastructure across on-premises, Azure and AWS (2024 to present) [AWS, Azure, Ansible, PowerShell, VMware]
+  - [Graduate Program](https://fonixau.github.io/Portfolio/site/linfox/graduate/): Rotations from warehouse operations to data engineering and cloud (2022 to 2024) [Snowflake, dbt, Airflow, Python, Terraform]
+- [Diverse Tech Lab](https://fonixau.github.io/Portfolio/site/diverse-tech-lab/): Full-stack development intern, remote (2021 to 2022) [Vue.js, React, .NET, Express, Postgres]
+  - [Zanitee](https://fonixau.github.io/Portfolio/site/diverse-tech-lab/zanitee/): Gift suggestion and cataloguing web application (2021 to 2022) [Vue.js, TypeScript, .NET, AWS, Postgres]
+
+## Projects
+- [Wedding suite](https://fonixau.github.io/Portfolio/site/wedding-suite/): Complete wedding website and digital invitation suite [Next.js, Cloudinary, Directus, Handlebars, fly.io]
+  - [Gallery site](https://fonixau.github.io/Portfolio/site/wedding-suite/gallery/): Next.js site with a guest photo gallery backed by Cloudinary [Next.js, React, Cloudinary, Vercel]
+  - [Invitations](https://fonixau.github.io/Portfolio/site/wedding-suite/invitations/): Templated digital invitations and save-the-dates [Handlebars, Express, Bulma, Render]
+  - [Guest list](https://fonixau.github.io/Portfolio/site/wedding-suite/guest-list/): Guest list and invitation data in Directus [Directus, Docker, fly.io]
+- [Nominate Bot](https://fonixau.github.io/Portfolio/site/nominate-bot/): Discord bot that lets a server govern itself by vote [Node.js, Discord, Docker, fly.io]
+- [Portfolio](https://fonixau.github.io/Portfolio/site/portfolio/): This site: a solar system an agent keeps up to date [three.js]
+- [Cryptarch](https://fonixau.github.io/Portfolio/site/cryptarch/): Destiny 2 vault analyzer that tiers your guns from community damage sheets (2026 to present) [Next.js, TypeScript, React, Google Sheets]
+- [Roomies](https://fonixau.github.io/Portfolio/site/roomies/): Shared-household manager for chores, bills and shopping (2024 to present) [Flutter, Dart, Firebase, Firestore]
+
+## Games
+- [Roulette](https://fonixau.github.io/Portfolio/site/roulette/): Multiplayer Russian Roulette game with party and ranked modes [Unreal Engine, Multiplayer]
+
+## Minor works and in-progress
+- [OBS Chat](https://fonixau.github.io/Portfolio/site/obs-chat/): Merges Twitch and Kick live chat into one OBS panel (2025) [JavaScript, OBS, Webhooks, REST APIs]
+- [Roguelike](https://fonixau.github.io/Portfolio/site/roguelike/): Hades-style isometric action roguelike [Unity, C#]
+- [Wagent](https://fonixau.github.io/Portfolio/site/wagent/): In-game AI chat sidebar for World of Warcraft [Lua]
+- [Breaking CAPTCHA](https://fonixau.github.io/Portfolio/site/breaking-captcha/): Text and audio CAPTCHA research, university capstone (2022) [Python, Machine learning]
+- [Fudget](https://fonixau.github.io/Portfolio/site/fudget/): Mobile-friendly household budget rebuilt from a spreadsheet [JavaScript]
+- [Color picker](https://fonixau.github.io/Portfolio/site/imagepathcolorpicker/): npm package that returns the main colour of an image (2023) [JavaScript, npm]
+- [Hexagon pattern](https://fonixau.github.io/Portfolio/site/hexagon-pattern/): npm package that builds hexagon patterns from a folder of images (2023) [JavaScript, npm]
+- [PoE2BuildLint](https://fonixau.github.io/Portfolio/site/poe2buildlint/) (2026) [TypeScript]
+- [Nexus](https://fonixau.github.io/Portfolio/site/nexus/): Node-graph agentic coding pipeline that maps, mutates, tests and merges its own changes (2026) [TypeScript, Node, pnpm, Ollama, git worktrees]
+- [D&D Grimoire](https://fonixau.github.io/Portfolio/site/dnd-grimoire/): Spellbook generator that turns a class pick into a printable book (2024) [Next.js, TypeScript, Radix UI, pdf-lib]
+- [Rasputin console](https://fonixau.github.io/Portfolio/site/rasputin/): Live-ops console for Claude Code telemetry, styled as a Warmind display (2026) [HTML, CSS, JavaScript, Python]
+- [Modular Portfolio](https://fonixau.github.io/Portfolio/site/modular-portfolio/): Earlier portfolio attempt on the Magic Portfolio template (2026) [Next.js, Once UI, Directus, Docker, fly.io]
