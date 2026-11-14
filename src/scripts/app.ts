@@ -17,6 +17,7 @@ const store = {
 doc.documentElement.classList.add('js');
 let scene: Scene | null = null, sceneFailed = false;
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const phone = matchMedia('(max-width: 760px)'); // the log opens entries as a sheet only on phones
 let motion = (store.get('motion') ?? (reduced ? 'off' : 'on')) === 'on';
 
 /** The entry list as a drawer (phones, and the 3D view). */
@@ -30,7 +31,7 @@ function show(id: string, push = true) {
   if (id && !byId.has(id)) id = '';
   const b = byId.get(id), shown = id || 'contact';
   body.dataset.sel = id;
-  if (id && body.dataset.view !== '3d') body.dataset.open = ''; else delete body.dataset.open; // the log view goes straight to the full panel
+  if (id && body.dataset.view !== '3d' && phone.matches) body.dataset.open = ''; else delete body.dataset.open; // the log view goes straight to the full panel
   setMenu(false);
   doc.querySelectorAll<HTMLElement>('.entry').forEach((a) => (a.hidden = a.dataset.id !== shown));
   doc.querySelectorAll<HTMLElement>('[data-match]').forEach((a) => (a.dataset.match === shown ? a.setAttribute('aria-current', 'page') : a.removeAttribute('aria-current')));
@@ -60,7 +61,7 @@ async function setView(v: '3d' | 'log', remember = true) {
   $('v3d').setAttribute('aria-pressed', String(v === '3d'));
   $('vlog').setAttribute('aria-pressed', String(v === 'log'));
   if (remember) store.set('view', v);
-  if (v === 'log' && body.dataset.sel) body.dataset.open = ''; else delete body.dataset.open;
+  if (v === 'log' && body.dataset.sel && phone.matches) body.dataset.open = ''; else delete body.dataset.open;
   if (v === '3d') { scene!.select(body.dataset.sel!); scene!.start(); } else scene?.stop();
 }
 
