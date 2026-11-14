@@ -2,12 +2,15 @@
 // One entry, in two parts: .summary is the small card, .full is the rest.
 // Jobs and projects share this file but use different headings and sections.
 import { render } from 'astro:content';
+import sharp from 'sharp';
 import type { Body } from '../lib/bodies';
 interface Props { b: Body; kids: Body[] }
 const { b, kids } = Astro.props;
 const { Content } = await render(b.entry);
 const job = b.kind === 'employer' || b.kind === 'role';
 const status = { live: 'Live', 'in-progress': 'In progress', archived: 'Archived', incomplete: 'Not complete' }[b.status ?? ''];
+// Picture sizes, so portrait shots can be given more height.
+const shots = await Promise.all(b.images.map(async (im) => { const m = await sharp(`public/${im.src.replace(/^\//, '')}`).metadata(); return { ...im, w: m.width!, h: m.height! }; }));
 const hasText = Boolean(b.entry.body?.trim());
 const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
 // The contact form posts to EmailJS, using the same service and template as the old site. Set the three PUBLIC_EMAILJS_* variables at build time to switch it on.
@@ -53,6 +56,6 @@ const mailOn = b.kind === 'sun' && mail.service && mail.template && mail.key;
   </div>
   {b.links.length > 0 && <p class="links">{b.links.map((l) => <a class="btn" href={l.url}>{l.label}</a>)}</p>}
   {b.images.length > 0 && (
-    <figure class="shots">{b.images.map((im) => <img src={base + im.src.replace(/^\//, '')} alt={im.alt} loading="lazy" />)}</figure>
+    <figure class="shots">{shots.map((im) => <img class:list={[im.h > im.w && 'tall']} src={base + im.src.replace(/^\//, '')} alt={im.alt} width={im.w} height={im.h} loading="lazy" />)}</figure>
   )}
 </div>

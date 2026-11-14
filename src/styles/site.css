@@ -18,7 +18,7 @@ html:not(.js) .js { display: none; }
 #top { position: fixed; inset: 0 0 auto; z-index: 6; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 20px; pointer-events: none; }
 #top > * { pointer-events: auto; }
 #menu { display: none; flex: none; }
-html.js #menu { display: inline-block; }
+html.js body[data-view="3d"] #menu { display: inline-block; }
 #crumb { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 12px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--dim); text-shadow: 0 0 6px #000; }
 #crumb a { text-underline-offset: 3px; }
 #controls { display: flex; gap: 8px; align-items: center; }
@@ -37,33 +37,64 @@ html.js #menu { display: inline-block; }
 #logtitle::after { content: ""; flex: 1; height: 1px; background: var(--rule); }
 .hd { margin: 0; padding: 7px 12px; font: 500 11px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--green); border-bottom: 1px solid var(--rule); background: rgba(var(--blue), .06); }
 
-/* The line-up: a vertical scroll. Bodies sit on one dashed axis with their moons in orbit; name, one line and parts to the right. */
-#lineup { --k: 1; --w: calc(232px * var(--k)); grid-column: 1 / -1; position: relative; isolation: isolate; width: min(780px, 100%); margin: 0 auto; padding: 14px 22px 18px; border: 1px solid var(--rule); background: rgba(4, 9, 16, .55); }
-#lineup::before { content: ""; position: absolute; z-index: -1; top: 0; bottom: 0; left: calc(22px + var(--w) / 2); border-left: 1px dashed rgba(var(--blue), .28); }
-.grp + .grp { margin-top: 20px; }
-.cap { display: block; margin-bottom: 6px; font: 500 10px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--dim); border-left: 1px solid var(--rule); padding-left: 8px; }
-.col { --r: calc((var(--s) / 2 + 30px) * var(--k)); --m: max(calc(32px * var(--k)), 24px); display: grid; grid-template-columns: var(--w) minmax(0, 1fr); gap: 0 18px; align-items: center; min-height: calc(var(--s) * var(--k) + 22px); }
-.col.has-moons { min-height: calc(2 * var(--r) + var(--m) + 14px); }
-.txt { display: grid; gap: 4px; justify-items: start; }
-.nm { font: 500 14px var(--mono); letter-spacing: .1em; text-transform: uppercase; text-decoration: none; color: var(--ink); }
-.col:has(.main[aria-current]) .nm { color: var(--green); }
-.tag { color: var(--dim); font-size: 14px; }
-.moons { list-style: none; margin: 2px 0 0; padding: 0; font-size: 14px; }
-.moons li::before { content: "\25B8"; color: var(--green); margin-right: 8px; }
-.orbit { position: relative; align-self: stretch; }
-.has-moons .orbit::before { content: ""; position: absolute; left: 50%; top: 50%; width: calc(2 * var(--r)); height: calc(2 * var(--r)); transform: translate(-50%, -50%); border: 1px dashed rgba(var(--blue), .3); border-radius: 50%; }
 .body { --d: calc(var(--s) * var(--k)); position: absolute; left: 50%; top: 50%; width: var(--d); height: var(--d); margin: calc(var(--d) / -2) 0 0 calc(var(--d) / -2); display: block; border-radius: 50%; text-decoration: none; opacity: .85; transition: opacity .15s, transform .2s; }
 .body svg { display: block; width: 100%; height: 100%; overflow: visible; }
 .body:hover, .col:has(.nm:hover) .main { opacity: 1; }
 .body[aria-current] { opacity: 1; box-shadow: 0 0 0 2px #cfeaff, 0 0 22px 5px rgba(120, 190, 255, .45); }
 .body.main[aria-current] { transform: scale(1.08); }
 .body.moon { --d: var(--m); left: calc(50% + var(--r) * cos(var(--a))); top: calc(50% + var(--r) * sin(var(--a))); background: #060d16; /* hides the orbit line behind it */ }
-/* minor works: a grid of rocks, each with its name beneath */
-.belt { background: #070e17; }
-.belt .row { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 14px 8px; }
-.belt .col { display: flex; flex-direction: column; align-items: center; min-height: 0; gap: 2px; }
-.belt .orbit { align-self: auto; width: calc(var(--s) * var(--k) + 12px); height: calc(var(--s) * var(--k) + 12px); }
-.belt .txt { justify-items: center; text-align: center; } .belt .nm { font-size: 10px; color: var(--dim); } .belt .tag { display: none; }
+/* Desktop and tablet: the horizontal Outer Wilds line-up. */
+@media (min-width: 761px) {
+  /* The line-up. Three rows: lane caption, names, bodies. Every body is centred on one axis; moons ride an orbit round their planet. */
+  #lineup { --k: 1; --pt: 14px; --nmh: 24px; --rowh: calc(236px * var(--k)); grid-column: 1 / -1; position: relative; display: flex; gap: calc(34px * var(--k)); overflow: auto hidden;
+    padding: var(--pt) 22px 16px; border: 1px solid var(--rule); background: rgba(4, 9, 16, .55); }
+  #lineup::before { content: ""; position: absolute; left: 0; right: 0; top: calc(var(--pt) + 26px + var(--nmh) + var(--rowh) / 2); border-top: 1px dashed rgba(var(--blue), .28); }
+  .grp { flex: none; }
+  .cap { display: block; height: 26px; font: 500 10px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--dim); border-left: 1px solid var(--rule); padding-left: 8px; }
+  .row { display: flex; gap: calc(22px * var(--k)); }
+  .col { --pad: 24px; --r: calc((var(--s) / 2 + 30px) * var(--k)); --m: max(calc(32px * var(--k)), 24px);
+    display: grid; grid-template-rows: var(--nmh) var(--rowh); justify-items: center; width: calc((var(--s) + var(--pad)) * var(--k)); }
+  .col.has-moons { --pad: 100px; }
+  .nm { align-self: end; padding-bottom: 4px; max-width: calc(100% + 18px); text-align: center; text-wrap: balance; font: 10px/1.2 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--dim); }
+  .col:has(.main[aria-current]) .nm { color: var(--ink); }
+  .orbit { position: relative; width: 100%; height: 100%; }
+  .has-moons .orbit::before { content: ""; position: absolute; left: 50%; top: 50%; width: calc(2 * var(--r)); height: calc(2 * var(--r)); transform: translate(-50%, -50%); border: 1px dashed rgba(var(--blue), .3); border-radius: 50%; }
+  /* the sun is cropped by the left edge, as in the Outer Wilds ship log */
+  .home .col { width: calc(128px * var(--k)); }
+  .home .body { left: calc(100% - var(--d) / 2); }
+  /* minor works: two rows of rocks, each with its name beneath */
+  .belt .row { display: grid; grid-template-rows: repeat(2, 1fr); grid-auto-flow: column; height: calc(var(--nmh) + var(--rowh)); gap: 0 calc(12px * var(--k)); }
+  .belt .col { grid-template-rows: auto auto; align-content: center; width: max(calc(108px * var(--k)), 94px); }
+  .belt .orbit { height: calc(var(--s) * var(--k) + 12px); }
+  .belt .nm { align-self: start; padding: 0; max-width: 100%; }
+
+  .nm { order: -1; text-decoration: none; } .belt .nm { order: 0; }
+  .txt { display: contents; } .txt :is(.tag, .moons) { display: none; }
+}
+/* Phones: a vertical scroll of planets. */
+@media (max-width: 760px) {
+  /* The line-up: a vertical scroll. Bodies sit on one dashed axis with their moons in orbit; name, one line and parts to the right. */
+  #lineup { --k: 1; --w: calc(232px * var(--k)); grid-column: 1 / -1; position: relative; isolation: isolate; width: min(780px, 100%); margin: 0 auto; padding: 14px 22px 18px; border: 1px solid var(--rule); background: rgba(4, 9, 16, .55); }
+  #lineup::before { content: ""; position: absolute; z-index: -1; top: 0; bottom: 0; left: calc(22px + var(--w) / 2); border-left: 1px dashed rgba(var(--blue), .28); }
+  .grp + .grp { margin-top: 20px; }
+  .cap { display: block; margin-bottom: 6px; font: 500 10px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--dim); border-left: 1px solid var(--rule); padding-left: 8px; }
+  .col { --r: calc((var(--s) / 2 + 30px) * var(--k)); --m: max(calc(32px * var(--k)), 24px); display: grid; grid-template-columns: var(--w) minmax(0, 1fr); gap: 0 18px; align-items: center; min-height: calc(var(--s) * var(--k) + 22px); }
+  .col.has-moons { min-height: calc(2 * var(--r) + var(--m) + 14px); }
+  .txt { display: grid; gap: 4px; justify-items: start; }
+  .nm { font: 500 14px var(--mono); letter-spacing: .1em; text-transform: uppercase; text-decoration: none; color: var(--ink); }
+  .col:has(.main[aria-current]) .nm { color: var(--green); }
+  .tag { color: var(--dim); font-size: 14px; }
+  .moons { list-style: none; margin: 2px 0 0; padding: 0; font-size: 14px; }
+  .moons li::before { content: "\25B8"; color: var(--green); margin-right: 8px; }
+  .orbit { position: relative; align-self: stretch; }
+  .has-moons .orbit::before { content: ""; position: absolute; left: 50%; top: 50%; width: calc(2 * var(--r)); height: calc(2 * var(--r)); transform: translate(-50%, -50%); border: 1px dashed rgba(var(--blue), .3); border-radius: 50%; }
+  /* minor works: a grid of rocks, each with its name beneath */
+  .belt { background: #070e17; }
+  .belt .row { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 14px 8px; }
+  .belt .col { display: flex; flex-direction: column; align-items: center; min-height: 0; gap: 2px; }
+  .belt .orbit { align-self: auto; width: calc(var(--s) * var(--k) + 12px); height: calc(var(--s) * var(--k) + 12px); }
+  .belt .txt { justify-items: center; text-align: center; } .belt .nm { font-size: 10px; color: var(--dim); } .belt .tag { display: none; }
+}
 
 #list, #entries { border: 1px solid var(--rule); background: rgba(4, 9, 16, .55); }
 #list { max-height: calc(100vh - 330px); min-height: 220px; overflow: auto; }
@@ -100,7 +131,8 @@ html.js body[data-menu] #top { z-index: 9; }
 .kids { list-style: none; padding: 0 !important; } .kids span { color: var(--dim); }
 .shots, .links, .contact { grid-column: 1 / -1; margin: 0; }
 /* slideshow: native horizontal scroll with snapping, no script */
-.shots { display: flex; gap: 8px; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 6px; scrollbar-color: rgba(var(--blue), .5) transparent; }
+.shots { display: flex; gap: 8px; overflow-x: auto; scroll-snap-type: x mandatory; align-items: center; padding-bottom: 6px; scrollbar-color: rgba(var(--blue), .5) transparent; }
+.shots img.tall { aspect-ratio: auto; width: auto; height: min(70vh, 640px); }
 .shots img { flex: none; width: min(100%, 560px); aspect-ratio: 16 / 10; object-fit: contain; background: #02050a; border: 1px solid var(--rule); scroll-snap-align: start; }
 .links { display: flex; flex-wrap: wrap; gap: 8px; }
 .contact form { display: grid; gap: 10px; max-width: 460px; }
@@ -133,9 +165,11 @@ body[data-view="3d"]:not([data-open]) .full { display: none; }
 /* ---------- the open panel, the same in both views ----------
    Vertical by default: title bar, facts, parts, text, links, then pictures. Where there is room and the entry has both
    parts and pictures, it becomes the ship-computer screen: facts top left, parts lower left, picture right, text along the bottom. */
-html.js #log { display: block; } html.js #list { display: none; }
-html.js :is(#entries, body[data-view="3d"] #entries) { border: 0; background: none; margin: 0; } html.js #entries > .hd { display: none; }
-html.js body[data-view="log"]:not([data-open]) .entry { display: none; }
+@media (max-width: 760px) { /* phones: the log is just the line-up; an entry opens as a sheet */
+  html.js #log { display: block; } html.js #menu { display: inline-block; } html.js #list { display: none; }
+  html.js #entries { border: 0; background: none; margin: 0; } html.js #entries > .hd { display: none; }
+  html.js body[data-view="log"]:not([data-open]) .entry { display: none; }
+}
 html.js body[data-view="log"][data-open]::after { content: ""; position: fixed; inset: 0; z-index: 5; background: rgba(0, 0, 0, .55); pointer-events: none; }
 html.js body[data-open] .entry:not([hidden]) { position: fixed; z-index: 6; inset: 64px 0 28px; margin: auto; width: min(620px, calc(100vw - 40px)); height: fit-content; max-height: calc(100vh - 92px); overflow: auto; padding: 0 14px 14px;
   display: flex; flex-direction: column; gap: 12px; border: 1px solid rgba(var(--blue), .7); background-color: rgba(5, 12, 21, .97); background-image: var(--grid); background-size: 32px 32px;
@@ -153,6 +187,7 @@ html.js body[data-open] .entry:not([hidden]) { position: fixed; z-index: 6; inse
   .desc section:last-child > :last-child { margin-bottom: 0; }
   .prose p { max-width: none; }
   .shots { padding: 0; gap: 0; } .shots img { width: 100%; border: 0; }
+  .shots img.tall { width: auto; max-width: 100%; height: min(calc(100vh - 170px), 1000px); }
 }
 @media (min-width: 900px) {
   html.js body[data-open] .entry:not([hidden]):has(.shots):has(.sub) { width: min(1180px, calc(100vw - 80px)); height: min(780px, calc(100vh - 92px)); overflow: hidden;
@@ -161,6 +196,11 @@ html.js body[data-open] .entry:not([hidden]) { position: fixed; z-index: 6; inse
     .sub { grid-area: sub; align-self: end; max-height: 100%; overflow: auto; }
     .shots { grid-area: shots; min-height: 0; } .shots img { height: 100%; aspect-ratio: auto; }
     .desc { grid-area: desc; min-height: 0; overflow: auto; columns: 2 380px; column-gap: 36px; } .desc section { break-inside: avoid; }
+  }
+  /* a portrait picture gets the full height: the picture runs top to bottom and the text moves under the list */
+  html.js body[data-open] .entry:not([hidden]):has(.shots):has(.sub):has(.tall) { height: calc(100vh - 92px);
+    grid-template: "bar bar" auto "info shots" auto "sub shots" auto "desc shots" minmax(0, 1fr) "links shots" auto / 330px minmax(0, 1fr);
+    .sub { align-self: start; } .desc { columns: auto; }
   }
 }
 
@@ -190,8 +230,10 @@ html.js body[data-open] .entry:not([hidden]) { position: fixed; z-index: 6; inse
   body[data-view="3d"] #entries { margin: 0; }
   body[data-view="3d"]:not([data-open]) .entry { left: 10px; right: 10px; top: auto; bottom: 10px; width: auto; }
   html.js body[data-open] .entry:not([hidden]) { inset: 50px 0 0; width: auto; height: auto; max-height: none; border-width: 1px 0 0; }
+  html.js body[data-open] .entry .shots { flex-direction: column; gap: 8px; overflow: visible; border: 0; background: none; } /* phones: pictures stacked, each at its own size */
+  html.js body[data-open] .entry .shots img { width: 100%; height: auto; border: 1px solid var(--rule); }
   html.js body[data-open] .entry .close { top: 5px; right: 10px; padding-block: 7px; }
 }
 @media (min-width: 480px) and (max-width: 760px) { .entry { padding: 16px 20px 20px; } #logtitle { margin-inline: 20px; } }
-@media (min-width: 761px) and (max-width: 1100px) { #log { grid-template-columns: 210px minmax(0, 1fr); } }
+@media (min-width: 761px) and (max-width: 1100px) { #log { grid-template-columns: 210px minmax(0, 1fr); } #lineup { --k: .82; } }
 @media (prefers-reduced-motion: reduce) { .body, .entry, #map { transition: none; animation: none !important; } }
