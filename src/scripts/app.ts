@@ -73,7 +73,10 @@ doc.addEventListener('click', (ev) => {
   const e = ev as MouseEvent, t = e.target as HTMLElement;
   const a = t.closest<HTMLAnchorElement>('a[data-id]');
   if (a && !e.metaKey && !e.ctrlKey && !e.shiftKey && e.button === 0) {
-    e.preventDefault(); show(a.dataset.id!);
+    e.preventDefault();
+    const keep = 'open' in body.dataset && a.closest('.entry'); // a link inside an open panel opens the next entry's panel
+    show(a.dataset.id!);
+    if (keep && a.dataset.id) body.dataset.open = '';
     return;
   }
   // button[...]: the body itself carries data-open while a panel is open, so a bare [data-open] would match every click
