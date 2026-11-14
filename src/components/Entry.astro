@@ -27,9 +27,6 @@ const mailOn = b.kind === 'sun' && mail.service && mail.template && mail.key;
 </div>
 <div class="full">
   <button class="btn close" type="button" data-close>Close</button>
-  {b.images.length > 0 && (
-    <figure class="shots">{b.images.map((im) => <img src={base + im.src.replace(/^\//, '')} alt={im.alt} loading="lazy" />)}</figure>
-  )}
   {kids.length > 0 && (
     <section class="sub"><h3>{job ? 'Roles' : 'Parts'}</h3>
       <ul class="kids">{kids.map((k) => <li><a href={k.url} data-id={k.id}>{k.title}</a>{k.when && <span> · {k.when}</span>}</li>)}</ul>
@@ -55,4 +52,7 @@ const mailOn = b.kind === 'sun' && mail.service && mail.template && mail.key;
   )}
   </div>
   {b.links.length > 0 && <p class="links">{b.links.map((l) => <a class="btn" href={l.url}>{l.label}</a>)}</p>}
+  {b.images.length > 0 && (
+    <figure class="shots">{b.images.map((im) => <img src={base + im.src.replace(/^\//, '')} alt={im.alt} loading="lazy" />)}</figure>
+  )}
 </div>
