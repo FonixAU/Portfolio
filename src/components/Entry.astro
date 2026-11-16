@@ -4,14 +4,18 @@
 import { render } from 'astro:content';
 import sharp from 'sharp';
 import type { Body } from '../lib/bodies';
-interface Props { b: Body; kids: Body[] }
-const { b, kids } = Astro.props;
+import type { Skill } from '../lib/skills';
+interface Props { b: Body; kids: Body[]; skills: Skill[] }
+const { b, kids, skills } = Astro.props;
+const groups = Object.entries(Object.groupBy(skills, (s) => s.group)); // the sun lists every skill
+const top = skills.filter((s) => s.used.length).sort((x, y) => y.used.length - x.used.length).slice(0, 6);
 const { Content } = await render(b.entry);
 const job = b.kind === 'employer' || b.kind === 'role';
 const status = { live: 'Live', 'in-progress': 'In progress', archived: 'Archived', incomplete: 'Not complete' }[b.status ?? ''];
 // Picture sizes, so portrait shots can be given more height.
 const shots = await Promise.all(b.images.map(async (im) => { const m = await sharp(`public/${im.src.replace(/^\//, '')}`).metadata(); return { ...im, w: m.width!, h: m.height! }; }));
 const hasText = Boolean(b.entry.body?.trim());
+const up = b.parent ? { url: b.url.replace(/[^/]+\/$/, ''), id: b.parent } : null; // moons get a Back button to their planet
 const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
 // The contact form posts to EmailJS, using the same service and template as the old site. Set the three PUBLIC_EMAILJS_* variables at build time to switch it on.
 const env = (k: string) => import.meta.env[`PUBLIC_EMAILJS_${k}`] ?? process.env[`PUBLIC_EMAILJS_${k}`] ?? process.env[`NEXT_PUBLIC_EMAILJS_${k}`] ?? process.env[`EMAILJS_${k}`];
@@ -25,10 +29,12 @@ const mailOn = b.kind === 'sun' && mail.service && mail.template && mail.key;
     {b.what && <p class="what">{b.what}</p>}
     {(b.when || b.part) && <p class="meta">{[b.when, b.part].filter(Boolean).join(' · ')}</p>}
     {b.stack.length > 0 && <ul class="tags">{b.stack.map((s) => <li>{s}</li>)}</ul>}
+    {top.length > 0 && <ul class="tags">{top.map((s) => <li>{s.name}</li>)}<li class="more">+{skills.length - top.length} more</li></ul>}
   </div>
   <button class="btn open" type="button" data-open>{b.kind === 'sun' ? 'Get in touch' : 'Open entry'}</button>
 </div>
 <div class="full">
+  {up && <a class="btn back" href={up.url} data-id={up.id}>&#9666; Back</a>}
   <button class="btn close" type="button" data-close>Close</button>
   {kids.length > 0 && (
     <section class="sub"><h3>{job ? 'Roles' : 'Parts'}</h3>
@@ -40,6 +46,12 @@ const mailOn = b.kind === 'sun' && mail.service && mail.template && mail.key;
   {b.achievements.length > 0 && <section><h3>Achievements</h3><ul>{b.achievements.map((a) => <li>{a}</li>)}</ul></section>}
   {b.outcome && <section><h3>Outcome</h3><p>{b.outcome}</p></section>}
   {b.highlights.length > 0 && <section><h3>Highlights</h3><ul>{b.highlights.map((a) => <li>{a}</li>)}</ul></section>}
+  {groups.length > 0 && (
+    <section class="skills"><h3>Skills</h3>
+      {groups.map(([g, list]) => (<><h4>{g}</h4><ul class="tags">{list!.map((s) => (
+        <li class:list={[!s.used.length && 'quiet']} title={s.used.length ? `Used in: ${s.used.map((u) => u.title).join(', ')}` : undefined}>{s.name}</li>))}</ul></>))}
+    </section>
+  )}
   {mailOn && (
     <section class="contact"><h3>Send a message</h3>
       <form data-mail data-service={mail.service} data-template={mail.template} data-key={mail.key}>

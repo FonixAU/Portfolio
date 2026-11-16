@@ -17,7 +17,7 @@ const GREY = [0x5f5e5a, 0x9a988f, 0x2c2c2a], MOON = [0x777570, 0xb4b2a9, 0x44444
 const UP = new THREE.Vector3(0, 1, 0), SYS = 100;
 const ease = (t) => 1 - Math.pow(1 - t, 3); // starts moving at once, lands softly
 
-export function createScene({ canvas, labels, brk, bodies, motion }) {
+export function createScene({ canvas, labels, brk, bodies, motion, skills = [] }) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
   renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
   const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(42, 1, 0.1, 4000);
@@ -115,22 +115,27 @@ export function createScene({ canvas, labels, brk, bodies, motion }) {
       b.tail.scale.setScalar(b.r); b.group.add(b.tail);
     }
   }
-  const orbit = (r, color, op, seg = 256) => {
-    const pts = []; for (let i = 0; i <= seg; i++) { const a = i / seg * Math.PI * 2; pts.push(new THREE.Vector3(Math.cos(a) * r, 0, Math.sin(a) * r)); }
-    return new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color, transparent: true, opacity: op }));
-  };
+  const line = (pts, color, op) => new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color, transparent: true, opacity: op }));
+  const orbit = (r, color, op, seg = 96) => line(Array.from({ length: seg + 1 }, (_, i) => { const a = i / seg * Math.PI * 2; return new THREE.Vector3(Math.cos(a) * r, 0, Math.sin(a) * r); }), color, op);
+  // Planets follow Kepler ellipses with the sun at one focus. E is the eccentric anomaly; b.q tilts the ellipse into its own plane.
+  const onEllipse = (b, E, out = new THREE.Vector3()) => out.set(b.a * (Math.cos(E) - b.e), 0, b.a * Math.sqrt(1 - b.e * b.e) * Math.sin(E)).applyQuaternion(b.q);
+  const anomaly = (b) => { let E = b.ang; for (let k = 0; k < 6; k++) E -= (E - b.e * Math.sin(E) - b.ang) / (1 - b.e * Math.cos(E)); return E; }; // Kepler's equation, Newton steps; b.ang is the mean anomaly
+  const Q = (axis, a) => new THREE.Quaternion().setFromAxisAngle(axis, a), X = new THREE.Vector3(1, 0, 0);
 
   const planets = B.filter((b) => !b.parent && b.kind !== 'sun' && b.kind !== 'asteroid');
   for (const b of planets) {
     const R = rnd(b.id + 'shape'); b.type = SURFACE[b.shape]; b.r = [0.6, 1.0, 1.45][b.size - 1]; b.speed = 0.3 / Math.pow(b.a, 1.5);
-    scene.add(orbit(b.a, new THREE.Color(LANE_TINT[b.lane] ?? 0xffffff).offsetHSL((R() - 0.5) * 0.06, 0, (R() - 0.5) * 0.1), 0.5));
+    b.q = Q(UP, b.node).multiply(Q(X, b.inc)).multiply(Q(UP, b.peri));
+    scene.add(line(Array.from({ length: 257 }, (_, i) => onEllipse(b, i / 256 * Math.PI * 2)), new THREE.Color(LANE_TINT[b.lane] ?? 0xffffff).offsetHSL((R() - 0.5) * 0.06, 0, (R() - 0.5) * 0.1), 0.5));
     b.group = new THREE.Group(); scene.add(b.group);
-    b.mesh = build(b); b.mesh.scale.setScalar(b.r); b.mesh.rotation.z = (R() - 0.5) * 0.6; b.mesh.userData.b = b; b.group.add(b.mesh); pick.push(b.mesh); decorate(b, R);
+    const tilt = (R() - 0.5) * 0.6; // axial tilt; moons orbit in the planet's equatorial plane, so their orbits share it
+    b.mesh = build(b); b.mesh.scale.setScalar(b.r); b.mesh.rotation.z = tilt; b.mesh.userData.b = b; b.group.add(b.mesh); pick.push(b.mesh); decorate(b, R);
     b.moons = B.filter((m) => m.parent === b.id);
+    const plane = new THREE.Group(); plane.rotation.z = tilt; b.group.add(plane);
     for (const m of b.moons) {
       m.r = b.r * 0.22; m.orbit = b.r * (2.4 + m.a * 0.7); m.speed = 0.25 / (m.a + 1); m.type = 0; m.pal = MOON; m.moons = [];
-      b.group.add(orbit(m.orbit, 0xffffff, 0.18, 96));
-      m.mesh = new THREE.Mesh(sphere, planetMat(m)); m.mesh.scale.setScalar(m.r); m.mesh.userData.b = m; b.group.add(m.mesh); pick.push(m.mesh);
+      plane.add(orbit(m.orbit, 0xffffff, 0.18));
+      m.mesh = new THREE.Mesh(sphere, planetMat(m)); m.mesh.scale.setScalar(m.r); m.mesh.userData.b = m; plane.add(m.mesh); pick.push(m.mesh);
     }
   }
   // asteroid belt: named rocks plus filler
@@ -145,6 +150,22 @@ export function createScene({ canvas, labels, brk, bodies, motion }) {
     b.r = 0.36; b.type = 0; b.pal = GREY; b.moons = []; b.group = new THREE.Group(); b.group.position.set(Math.cos(b.ang) * b.a, 0, Math.sin(b.ang) * b.a); belt.add(b.group);
     b.mesh = new THREE.Mesh(rock, planetMat(b, { D: 0.35, F: 1 })); b.mesh.scale.set(b.r, b.r * 0.75, b.r * 0.85); b.mesh.userData.b = b; b.group.add(b.mesh); pick.push(b.mesh);
   }
+  // skills ring: one small amber point per skill, outside the belt. Hover (or tap) one to name it and light the bodies that use it.
+  const ring = new THREE.Group(); scene.add(ring);
+  const SK = skills.map((k, i) => {
+    const R = rnd('skill' + k.name), a = (i + R() * 0.6) / skills.length * Math.PI * 2, r = beltR + 8 + (R() - 0.5) * 1.5;
+    const m = new THREE.Mesh(rock, new THREE.MeshBasicMaterial({ color: new THREE.Color(0.98, 0.78, 0.46).multiplyScalar(k.used.length ? 1 : 0.55) }));
+    m.position.set(Math.cos(a) * r, (R() - 0.5) * 0.8, Math.sin(a) * r); m.scale.setScalar(0.16 + Math.min(k.used.length, 4) * 0.04); ring.add(m);
+    const el = document.createElement('span'); el.className = 'lab skill'; el.textContent = k.name; el.style.display = 'none'; labels.append(el);
+    return { ...k, m, el, sx: 0, sy: 0, on: false };
+  });
+  let hov = null;
+  function hover(k) {
+    if (k === hov) return; hov = k;
+    for (const b of B) b.el.classList.toggle('lit', !!k && (k.used.includes(b.id) || b.moons?.some((m) => k.used.includes(m.id))));
+  }
+  const skillAt = (x, y, touch) => { let best = null, d0 = touch ? 26 : 16; for (const k of SK) { const d = Math.hypot(x - k.sx, y - k.sy); if (k.on && d < d0) { d0 = d; best = k; } } return best; };
+
   // grid that fades in beneath the focused body
   const grid = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.ShaderMaterial({ transparent: true, depthWrite: false, side: THREE.DoubleSide, uniforms: { o: { value: 0 } },
     vertexShader: `varying vec2 u;void main(){u=uv-.5;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
@@ -167,6 +188,7 @@ export function createScene({ canvas, labels, brk, bodies, motion }) {
   const dest = (out) => (sel ? sel.mesh.getWorldPosition(out) : out.set(0, 0, 0));
 
   function select(id) {
+    if (running && (byId[id] || null) === sel) return; // already there: keep the visitor's zoom and angle
     sel = byId[id] || null; cam.goal = sel ? focusDist(sel) : SYS * wide();
     if (motion && running) {
       // fly there: eased, pulling back a little mid-way so the trip reads as travel
@@ -193,7 +215,7 @@ export function createScene({ canvas, labels, brk, bodies, motion }) {
   const ptrs = new Map(); let moved = 0, pinch = 0, downX = 0, downY = 0;
   const zoom = (f) => { fly = null; cam.goal = Math.min(280, Math.max(sel ? sel.r * 2.6 : 14, cam.goal * f)); };
   canvas.addEventListener('pointerdown', (e) => { canvas.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, e); moved = 0; pinch = 0; downX = e.clientX; downY = e.clientY; });
-  canvas.addEventListener('pointermove', (e) => { if (!ptrs.size && e.pointerType === 'mouse') canvas.style.cursor = hitAt(e.clientX, e.clientY, false) ? 'pointer' : 'grab'; });
+  canvas.addEventListener('pointermove', (e) => { if (ptrs.size || e.pointerType !== 'mouse') return; const h = hitAt(e.clientX, e.clientY, false); canvas.style.cursor = h ? 'pointer' : 'grab'; hover(h ? null : skillAt(e.clientX, e.clientY, false)); });
   canvas.addEventListener('pointermove', (e) => {
     const p = ptrs.get(e.pointerId); if (!p) return;
     if (ptrs.size === 1) { cam.yaw -= (e.clientX - p.clientX) * 0.005; cam.pitch = Math.min(1.45, Math.max(0.06, cam.pitch + (e.clientY - p.clientY) * 0.004)); moved = Math.max(moved, Math.hypot(e.clientX - downX, e.clientY - downY)); }
@@ -204,6 +226,7 @@ export function createScene({ canvas, labels, brk, bodies, motion }) {
     const touch = e.pointerType !== 'mouse';
     if (!ptrs.delete(e.pointerId) || moved >= (touch ? 12 : 6) || e.type !== 'pointerup') return; // a small wobble is still a click
     const h = hitAt(e.clientX, e.clientY, touch);
+    if (touch) hover(h ? null : skillAt(e.clientX, e.clientY, true));
     if (h && h !== sel) document.dispatchEvent(new CustomEvent('pick', { detail: h.id }));
   };
   canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up);
@@ -221,11 +244,11 @@ export function createScene({ canvas, labels, brk, bodies, motion }) {
     const dt = Math.min(0.05, (now - last) / 1000 || 0); last = now;
     const drift = motion ? dt : 0; clock.value += drift;
     for (const b of planets) {
-      b.ang += b.speed * drift; b.group.position.set(Math.cos(b.ang) * b.a, 0, Math.sin(b.ang) * b.a); b.mesh.rotation.y += drift * (b.spin || 0.05);
+      b.ang += b.speed * drift; onEllipse(b, anomaly(b), b.group.position); // mean motion is steady, so planets speed up near the sun b.mesh.rotation.y += drift * (b.spin || 0.05);
       if (b.tail) b.tail.quaternion.setFromUnitVectors(UP, v.copy(b.group.position).normalize());
       for (const m of b.moons) { m.ang += m.speed * drift; m.mesh.position.set(Math.cos(m.ang) * m.orbit, 0, Math.sin(m.ang) * m.orbit); }
     }
-    belt.rotation.y -= drift * 0.0012; scene.updateMatrixWorld();
+    belt.rotation.y -= drift * 0.0012; ring.rotation.y -= drift * 0.0006; scene.updateMatrixWorld();
     dest(wp);
     if (fly) {
       fly.t += dt / fly.dur; const e = ease(Math.min(1, fly.t));
@@ -249,6 +272,11 @@ export function createScene({ canvas, labels, brk, bodies, motion }) {
       const vis = b.hit && b !== sel && !(open && x < 480) && !(y < 56 && x > W - 420);
       b.el.style.display = vis ? '' : 'none';
       if (vis) b.el.style.transform = `translate(${(x + Math.max(8, b.pr + 6)).toFixed(1)}px,${y.toFixed(1)}px) translate(0,-50%)`;
+    }
+    for (const k of SK) {
+      k.m.getWorldPosition(v); v.project(camera); k.sx = (v.x + 1) / 2 * W; k.sy = (1 - v.y) / 2 * H; k.on = v.z < 1 && !open;
+      const show = k === hov && k.on; k.el.style.display = show ? '' : 'none';
+      if (show) k.el.style.transform = `translate(${(k.sx + 10).toFixed(1)}px,${k.sy.toFixed(1)}px) translate(0,-50%)`;
     }
     if (sel) {
       const s = Math.max(54, sel.pr * 2.7), st = document.body.style;

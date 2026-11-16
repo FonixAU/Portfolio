@@ -30,8 +30,11 @@ function setMenu(open: boolean) {
 function show(id: string, push = true) {
   if (id && !byId.has(id)) id = '';
   const b = byId.get(id), shown = id || 'contact';
+  // Moving between a planet and its moons while a panel is open swaps the panel in place; the camera stays on the planet.
+  const root = (x?: string) => (x && byId.get(x)?.parent) || x;
+  const stay = 'open' in body.dataset && !!id && root(id) === root(body.dataset.sel);
   body.dataset.sel = id;
-  if (id && body.dataset.view !== '3d' && phone.matches) body.dataset.open = ''; else delete body.dataset.open; // the log view goes straight to the full panel
+  if (stay || (id && body.dataset.view !== '3d' && phone.matches)) body.dataset.open = ''; else delete body.dataset.open; // the log view goes straight to the full panel
   setMenu(false);
   doc.querySelectorAll<HTMLElement>('.entry').forEach((a) => (a.hidden = a.dataset.id !== shown));
   doc.querySelectorAll<HTMLElement>('[data-match]').forEach((a) => (a.dataset.match === shown ? a.setAttribute('aria-current', 'page') : a.removeAttribute('aria-current')));
@@ -42,7 +45,7 @@ function show(id: string, push = true) {
     ? (b.lane ? `<span> / ${LANES[b.lane]}</span>` : b.kind === 'asteroid' ? '<span> / Minor works &amp; in-progress</span>' : '') + (parent ? `<span> / <a href="${parent.url}" data-id="${parent.id}">${esc(parent.title)}</a></span>` : '') + `<span> / ${esc(b.title)}</span>`
     : '');
   if (push) history.pushState(null, '', b ? b.url : base);
-  scene?.select(id);
+  scene?.select(stay ? root(id)! : id);
 }
 const idFromUrl = () => decodeURIComponent(location.pathname.slice(base.length)).replace(/\/$/, '');
 
@@ -50,7 +53,7 @@ async function setView(v: '3d' | 'log', remember = true) {
   if (v === '3d' && !scene && !sceneFailed) {
     try {
       const { createScene } = await import('./scene');
-      scene = createScene({ canvas: $<HTMLCanvasElement>('map'), labels: $('labels'), brk: $('brk'), bodies, motion }) as Scene;
+      scene = createScene({ canvas: $<HTMLCanvasElement>('map'), labels: $('labels'), brk: $('brk'), bodies, motion, skills: JSON.parse($('skills').textContent!) }) as Scene;
     } catch (e) {
       console.warn('3D map unavailable, staying in the log view', e);
       sceneFailed = true; $('v3d').hidden = true;
