@@ -49,7 +49,7 @@ const mailOn = b.kind === 'sun' && mail.service && mail.template && mail.key;
   {groups.length > 0 && (
     <section class="skills"><h3>Skills</h3>
       {groups.map(([g, list]) => (<><h4>{g}</h4><ul class="tags">{list!.map((s) => (
-        <li class:list={[!s.used.length && 'quiet']} title={s.used.length ? `Used in: ${s.used.map((u) => u.title).join(', ')}` : undefined}>{s.name}</li>))}</ul></>))}
+        <li class:list={[!s.used.length && 'quiet']}>{s.used.length ? <a href={`${base}?skill=${encodeURIComponent(s.name)}`} data-skill={s.name} title={`Used in: ${s.used.map((u) => u.title).join(', ')}. Show on the map`}>{s.name}</a> : s.name}</li>))}</ul></>))}
     </section>
   )}
   {mailOn && (

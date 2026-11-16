@@ -43,6 +43,7 @@ const description = shown.what ?? `${NAME}'s portfolio, as a solar system you ca
 <Fragment set:html={iconDefs} />
 <canvas id="map" aria-hidden="true"></canvas>
 <div id="labels"></div>
+<button id="skillchip" class="btn" type="button" hidden aria-label="Clear skill highlight"></button>
 <svg id="brk" viewBox="0 0 100 100" aria-hidden="true"><g fill="none" stroke="#c9c7bd" stroke-width="1.6" stroke-linecap="round">
 <path d="M7 25A50 50 0 0 1 25 7"/><path d="M75 7A50 50 0 0 1 93 25"/><path d="M93 75A50 50 0 0 1 75 93"/><path d="M25 93A50 50 0 0 1 7 75"/></g></svg>
 
@@ -110,7 +111,7 @@ const description = shown.what ?? `${NAME}'s portfolio, as a solar system you ca
 
 <div id="hints" aria-hidden="true">Drag to rotate<br>Scroll or pinch to zoom<br>Esc to go back</div>
 <script type="application/json" id="scene" set:html={JSON.stringify(sceneData(bodies))}></script>
-<script type="application/json" id="skills" set:html={JSON.stringify(skills(bodies).map((s) => ({ name: s.name, used: s.used.map((b) => b.id) })))}></script>
+<script type="application/json" id="skills" set:html={JSON.stringify(skills(bodies).map((s) => ({ name: s.name, group: s.group, used: s.used.map((b) => b.id) })))}></script>
 <script>import '../scripts/app.ts';</script>
 </body>
 </html>

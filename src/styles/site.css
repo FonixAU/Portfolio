@@ -121,6 +121,8 @@ html.js body[data-menu] #top { z-index: 9; }
 .tags { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 6px; margin: 0 0 4px; padding: 0; list-style: none; }
 .tags li { font: 11px var(--mono); padding: 2px 7px; border: 1px solid var(--rule); color: #fac775; }
 .tags li.quiet, .tags li.more { color: var(--dim); }
+.tags a { color: inherit; text-decoration: none; } .tags a:hover { color: #fff; }
+#skillchip[hidden] { display: none; }
 .skills .tags { padding: 0; }
 .skills h4 { margin: 10px 0 5px; font: 11px var(--mono); letter-spacing: .09em; text-transform: uppercase; color: var(--dim); }
 .btn { display: inline-block; margin-top: 10px; padding: 6px 12px; font: 12px var(--mono); letter-spacing: .06em; text-transform: uppercase; text-decoration: none; border: 1px solid rgba(var(--blue), .6); }
@@ -155,6 +157,9 @@ body[data-view="3d"] :is(#map, #labels, #brk, #hints) { display: block; }
 .lab.minor { font-size: 11px; color: var(--dim); }
 .lab:hover { color: #fff; }
 .lab.skill { color: #fac775; pointer-events: none; }
+.lab.const { color: rgba(250, 199, 117, .38); font-size: 10px; letter-spacing: .2em; pointer-events: none; }
+#skillchip { position: fixed; left: 16px; bottom: 16px; z-index: 4; max-width: min(520px, calc(100vw - 32px)); text-align: left; }
+body:not([data-view="3d"]) #skillchip, body[data-open] #skillchip { display: none; }
 .lab.lit { color: var(--green); }
 #brk { position: fixed; pointer-events: none; }
 #hints { position: fixed; right: 20px; bottom: 14px; text-align: right; color: var(--dim); font-size: 13px; line-height: 1.7; pointer-events: none; }

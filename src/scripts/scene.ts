@@ -150,19 +150,40 @@ export function createScene({ canvas, labels, brk, bodies, motion, skills = [] }
     b.r = 0.36; b.type = 0; b.pal = GREY; b.moons = []; b.group = new THREE.Group(); b.group.position.set(Math.cos(b.ang) * b.a, 0, Math.sin(b.ang) * b.a); belt.add(b.group);
     b.mesh = new THREE.Mesh(rock, planetMat(b, { D: 0.35, F: 1 })); b.mesh.scale.set(b.r, b.r * 0.75, b.r * 0.85); b.mesh.userData.b = b; b.group.add(b.mesh); pick.push(b.mesh);
   }
-  // skills ring: one small amber point per skill, outside the belt. Hover (or tap) one to name it and light the bodies that use it.
-  const ring = new THREE.Group(); scene.add(ring);
-  const SK = skills.map((k, i) => {
-    const R = rnd('skill' + k.name), a = (i + R() * 0.6) / skills.length * Math.PI * 2, r = beltR + 8 + (R() - 0.5) * 1.5;
-    const m = new THREE.Mesh(rock, new THREE.MeshBasicMaterial({ color: new THREE.Color(0.98, 0.78, 0.46).multiplyScalar(k.used.length ? 1 : 0.55) }));
-    m.position.set(Math.cos(a) * r, (R() - 0.5) * 0.8, Math.sin(a) * r); m.scale.setScalar(0.16 + Math.min(k.used.length, 4) * 0.04); ring.add(m);
-    const el = document.createElement('span'); el.className = 'lab skill'; el.textContent = k.name; el.style.display = 'none'; labels.append(el);
-    return { ...k, m, el, sx: 0, sy: 0, on: false };
+  // skills as background stars, one constellation per group, low in the sky where the tilted camera looks.
+  // Hover names a star; clicking one (via app.ts) lights the bodies that use that skill.
+  const starTex = (() => {
+    const cv = document.createElement('canvas'); cv.width = cv.height = 64; const x = cv.getContext('2d'), g = x.createRadialGradient(32, 32, 0, 32, 32, 32);
+    g.addColorStop(0, 'rgba(255,240,210,1)'); g.addColorStop(0.18, 'rgba(250,199,117,.9)'); g.addColorStop(0.5, 'rgba(250,170,80,.18)'); g.addColorStop(1, 'rgba(250,150,60,0)'); x.fillStyle = g; x.fillRect(0, 0, 64, 64);
+    return new THREE.CanvasTexture(cv);
+  })();
+  const SKY_R = 1200, sky2 = new THREE.Group(); scene.add(sky2);
+  const groups = [...new Set(skills.map((k) => k.group))];
+  const dir = (az, el) => new THREE.Vector3(Math.cos(el) * Math.cos(az), Math.sin(el), Math.cos(el) * Math.sin(az));
+  const SK = [], CONST = groups.map((g, gi) => {
+    const R = rnd('const' + g), az = gi / groups.length * Math.PI * 2 + 0.4, el = -(gi % 2 ? 30 : 15) * Math.PI / 180;
+    const c = dir(az, el), e1 = new THREE.Vector3().crossVectors(c, UP).normalize(), e2 = new THREE.Vector3().crossVectors(e1, c);
+    const stars = skills.filter((k) => k.group === g).map((k) => {
+      const a = R() * Math.PI * 2, r = Math.sqrt(R()) * 0.15; // within about 9 degrees of the centre
+      const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: starTex, sizeAttenuation: false, depthWrite: false, transparent: true, opacity: k.used.length ? 1 : 0.5 }));
+      sp.position.copy(c).addScaledVector(e1, Math.cos(a) * r).addScaledVector(e2, Math.sin(a) * r).normalize().multiplyScalar(SKY_R);
+      sp.userData.base = k.used.length ? 0.022 : 0.015; sp.scale.setScalar(sp.userData.base); sky2.add(sp);
+      const el2 = document.createElement('span'); el2.className = 'lab skill'; el2.textContent = k.name; el2.style.display = 'none'; labels.append(el2);
+      const st = { ...k, m: sp, el: el2, sx: 0, sy: 0, on: false }; SK.push(st); return st;
+    });
+    // join the stars nearest-first into one line, like a drawn constellation
+    const left = [...stars], path = [left.shift()];
+    while (left.length) { const p = path.at(-1).m.position; left.sort((x, y) => x.m.position.distanceTo(p) - y.m.position.distanceTo(p)); path.push(left.shift()); }
+    const ln = line(path.map((k) => k.m.position.clone().multiplyScalar(0.999)), 0xfac775, 0.16); sky2.add(ln);
+    const name = document.createElement('span'); name.className = 'lab const'; name.textContent = g; labels.append(name);
+    return { g, ln, name, pos: stars.reduce((p, k) => p.add(k.m.position), new THREE.Vector3()).divideScalar(stars.length) }; // name sits at the middle of its stars
   });
-  let hov = null;
-  function hover(k) {
-    if (k === hov) return; hov = k;
-    for (const b of B) b.el.classList.toggle('lit', !!k && (k.used.includes(b.id) || b.moons?.some((m) => k.used.includes(m.id))));
+  let hov = null, act = null;
+  function setSkill(n) {
+    act = SK.find((k) => k.name === n) || null;
+    for (const b of B) b.el.classList.toggle('lit', !!act && (act.used.includes(b.id) || b.moons?.some((m) => act.used.includes(m.id))));
+    for (const k of SK) k.m.scale.setScalar(k.m.userData.base * (k === act ? 2 : 1));
+    for (const c of CONST) c.ln.material.opacity = act && act.group === c.g ? 0.45 : 0.16;
   }
   const skillAt = (x, y, touch) => { let best = null, d0 = touch ? 26 : 16; for (const k of SK) { const d = Math.hypot(x - k.sx, y - k.sy); if (k.on && d < d0) { d0 = d; best = k; } } return best; };
 
@@ -215,7 +236,7 @@ export function createScene({ canvas, labels, brk, bodies, motion, skills = [] }
   const ptrs = new Map(); let moved = 0, pinch = 0, downX = 0, downY = 0;
   const zoom = (f) => { fly = null; cam.goal = Math.min(280, Math.max(sel ? sel.r * 2.6 : 14, cam.goal * f)); };
   canvas.addEventListener('pointerdown', (e) => { canvas.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, e); moved = 0; pinch = 0; downX = e.clientX; downY = e.clientY; });
-  canvas.addEventListener('pointermove', (e) => { if (ptrs.size || e.pointerType !== 'mouse') return; const h = hitAt(e.clientX, e.clientY, false); canvas.style.cursor = h ? 'pointer' : 'grab'; hover(h ? null : skillAt(e.clientX, e.clientY, false)); });
+  canvas.addEventListener('pointermove', (e) => { if (ptrs.size || e.pointerType !== 'mouse') return; const h = hitAt(e.clientX, e.clientY, false); hov = h ? null : skillAt(e.clientX, e.clientY, false); canvas.style.cursor = h || hov ? 'pointer' : 'grab'; });
   canvas.addEventListener('pointermove', (e) => {
     const p = ptrs.get(e.pointerId); if (!p) return;
     if (ptrs.size === 1) { cam.yaw -= (e.clientX - p.clientX) * 0.005; cam.pitch = Math.min(1.45, Math.max(0.06, cam.pitch + (e.clientY - p.clientY) * 0.004)); moved = Math.max(moved, Math.hypot(e.clientX - downX, e.clientY - downY)); }
@@ -226,7 +247,8 @@ export function createScene({ canvas, labels, brk, bodies, motion, skills = [] }
     const touch = e.pointerType !== 'mouse';
     if (!ptrs.delete(e.pointerId) || moved >= (touch ? 12 : 6) || e.type !== 'pointerup') return; // a small wobble is still a click
     const h = hitAt(e.clientX, e.clientY, touch);
-    if (touch) hover(h ? null : skillAt(e.clientX, e.clientY, true));
+    const k = h ? null : skillAt(e.clientX, e.clientY, touch);
+    if (k) document.dispatchEvent(new CustomEvent('skill', { detail: k === act ? null : k.name }));
     if (h && h !== sel) document.dispatchEvent(new CustomEvent('pick', { detail: h.id }));
   };
   canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up);
@@ -244,11 +266,11 @@ export function createScene({ canvas, labels, brk, bodies, motion, skills = [] }
     const dt = Math.min(0.05, (now - last) / 1000 || 0); last = now;
     const drift = motion ? dt : 0; clock.value += drift;
     for (const b of planets) {
-      b.ang += b.speed * drift; onEllipse(b, anomaly(b), b.group.position); // mean motion is steady, so planets speed up near the sun b.mesh.rotation.y += drift * (b.spin || 0.05);
+      b.ang += b.speed * drift; onEllipse(b, anomaly(b), b.group.position); b.mesh.rotation.y += drift * (b.spin || 0.05); // mean motion is steady, so planets speed up near the sun
       if (b.tail) b.tail.quaternion.setFromUnitVectors(UP, v.copy(b.group.position).normalize());
       for (const m of b.moons) { m.ang += m.speed * drift; m.mesh.position.set(Math.cos(m.ang) * m.orbit, 0, Math.sin(m.ang) * m.orbit); }
     }
-    belt.rotation.y -= drift * 0.0012; ring.rotation.y -= drift * 0.0006; scene.updateMatrixWorld();
+    belt.rotation.y -= drift * 0.0012; scene.updateMatrixWorld();
     dest(wp);
     if (fly) {
       fly.t += dt / fly.dur; const e = ease(Math.min(1, fly.t));
@@ -257,6 +279,7 @@ export function createScene({ canvas, labels, brk, bodies, motion, skills = [] }
     } else { cam.target.lerp(wp, 1 - Math.exp(-dt * 10)); cam.dist += (cam.goal - cam.dist) * (1 - Math.exp(-dt * 6)); }
     camera.position.set(Math.cos(cam.pitch) * Math.sin(cam.yaw), Math.sin(cam.pitch), Math.cos(cam.pitch) * Math.cos(cam.yaw)).multiplyScalar(cam.dist).add(cam.target);
     camera.lookAt(cam.target); camera.updateMatrixWorld();
+    sky2.position.copy(camera.position); sky2.updateMatrixWorld(); // stars sit at infinity: no parallax
     corona.quaternion.copy(camera.quaternion);
     const showGrid = sel && sel.kind !== 'sun', k = 1 - Math.exp(-dt * 4);
     gridO += ((showGrid ? 1 : 0) - gridO) * k; grid.material.uniforms.o.value = gridO;
@@ -274,9 +297,13 @@ export function createScene({ canvas, labels, brk, bodies, motion, skills = [] }
       if (vis) b.el.style.transform = `translate(${(x + Math.max(8, b.pr + 6)).toFixed(1)}px,${y.toFixed(1)}px) translate(0,-50%)`;
     }
     for (const k of SK) {
-      k.m.getWorldPosition(v); v.project(camera); k.sx = (v.x + 1) / 2 * W; k.sy = (1 - v.y) / 2 * H; k.on = v.z < 1 && !open;
-      const show = k === hov && k.on; k.el.style.display = show ? '' : 'none';
+      k.m.getWorldPosition(v); v.project(camera); k.sx = (v.x + 1) / 2 * W; k.sy = (1 - v.y) / 2 * H; k.on = v.z < 1 && !open && Math.abs(v.x) < 1 && Math.abs(v.y) < 1;
+      const show = (k === hov || k === act) && k.on; k.el.style.display = show ? '' : 'none';
       if (show) k.el.style.transform = `translate(${(k.sx + 10).toFixed(1)}px,${k.sy.toFixed(1)}px) translate(0,-50%)`;
+    }
+    for (const c of CONST) {
+      v.copy(c.pos).add(camera.position); v.project(camera); const on = v.z < 1 && !open && Math.abs(v.x) < 1.1 && Math.abs(v.y) < 1.1;
+      c.name.style.display = on ? '' : 'none'; if (on) c.name.style.transform = `translate(${((v.x + 1) / 2 * W).toFixed(1)}px,${((1 - v.y) / 2 * H).toFixed(1)}px) translate(-50%,-50%)`;
     }
     if (sel) {
       const s = Math.max(54, sel.pr * 2.7), st = document.body.style;
@@ -286,7 +313,7 @@ export function createScene({ canvas, labels, brk, bodies, motion, skills = [] }
   }
 
   return {
-    select,
+    select, setSkill,
     setMotion(on) { motion = on; },
     start() { if (running) return; running = true; resize(); dest(cam.target); cam.dist = cam.goal; fly = null; last = performance.now(); raf = requestAnimationFrame(frame); },
     stop() { running = false; cancelAnimationFrame(raf); },
