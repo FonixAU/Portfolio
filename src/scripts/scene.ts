@@ -150,7 +150,7 @@ export function createScene({ canvas, labels, brk, bodies, motion, skills = [] }
     b.r = 0.36; b.type = 0; b.pal = GREY; b.moons = []; b.group = new THREE.Group(); b.group.position.set(Math.cos(b.ang) * b.a, 0, Math.sin(b.ang) * b.a); belt.add(b.group);
     b.mesh = new THREE.Mesh(rock, planetMat(b, { D: 0.35, F: 1 })); b.mesh.scale.set(b.r, b.r * 0.75, b.r * 0.85); b.mesh.userData.b = b; b.group.add(b.mesh); pick.push(b.mesh);
   }
-  // skills as background stars, one constellation per group, low in the sky where the tilted camera looks.
+  // skills as background stars, one constellation per group, high on the horizon, above the system.
   // Hover names a star; clicking one (via app.ts) lights the bodies that use that skill.
   const starTex = (() => {
     const cv = document.createElement('canvas'); cv.width = cv.height = 64; const x = cv.getContext('2d'), g = x.createRadialGradient(32, 32, 0, 32, 32, 32);
@@ -161,22 +161,23 @@ export function createScene({ canvas, labels, brk, bodies, motion, skills = [] }
   const groups = [...new Set(skills.map((k) => k.group))];
   const dir = (az, el) => new THREE.Vector3(Math.cos(el) * Math.cos(az), Math.sin(el), Math.cos(el) * Math.sin(az));
   const SK = [], CONST = groups.map((g, gi) => {
-    const R = rnd('const' + g), az = gi / groups.length * Math.PI * 2 + 0.4, el = -(gi % 2 ? 30 : 15) * Math.PI / 180;
+    const R = rnd('const' + g), az = gi / groups.length * Math.PI * 2 + 0.4, el = (gi % 2 ? -4 : -12) * Math.PI / 180; // up along the horizon, above the system's disc
     const c = dir(az, el), e1 = new THREE.Vector3().crossVectors(c, UP).normalize(), e2 = new THREE.Vector3().crossVectors(e1, c);
+    const C = c.clone().multiplyScalar(SKY_R), cg = new THREE.Group(); cg.position.copy(C); sky2.add(cg); // scaled about its centre as the camera zooms
     const stars = skills.filter((k) => k.group === g).map((k) => {
       const a = R() * Math.PI * 2, r = Math.sqrt(R()) * 0.15; // within about 9 degrees of the centre
       const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: starTex, sizeAttenuation: false, depthWrite: false, transparent: true, opacity: k.used.length ? 1 : 0.5 }));
-      sp.position.copy(c).addScaledVector(e1, Math.cos(a) * r).addScaledVector(e2, Math.sin(a) * r).normalize().multiplyScalar(SKY_R);
-      sp.userData.base = k.used.length ? 0.022 : 0.015; sp.scale.setScalar(sp.userData.base); sky2.add(sp);
+      sp.position.copy(c).addScaledVector(e1, Math.cos(a) * r).addScaledVector(e2, Math.sin(a) * r).normalize().multiplyScalar(SKY_R).sub(C);
+      sp.userData.base = k.used.length ? 0.022 : 0.015; sp.scale.setScalar(sp.userData.base); cg.add(sp);
       const el2 = document.createElement('span'); el2.className = 'lab skill'; el2.textContent = k.name; el2.style.display = 'none'; labels.append(el2);
       const st = { ...k, m: sp, el: el2, sx: 0, sy: 0, on: false }; SK.push(st); return st;
     });
     // join the stars nearest-first into one line, like a drawn constellation
     const left = [...stars], path = [left.shift()];
     while (left.length) { const p = path.at(-1).m.position; left.sort((x, y) => x.m.position.distanceTo(p) - y.m.position.distanceTo(p)); path.push(left.shift()); }
-    const ln = line(path.map((k) => k.m.position.clone().multiplyScalar(0.999)), 0xfac775, 0.16); sky2.add(ln);
+    const ln = line(path.map((k) => k.m.position.clone().add(C).multiplyScalar(0.999).sub(C)), 0xfac775, 0.16); cg.add(ln);
     const name = document.createElement('span'); name.className = 'lab const'; name.textContent = g; labels.append(name);
-    return { g, ln, name, pos: stars.reduce((p, k) => p.add(k.m.position), new THREE.Vector3()).divideScalar(stars.length) }; // name sits at the middle of its stars
+    return { g, ln, name, cg, pos: stars.reduce((p, k) => p.add(k.m.position), new THREE.Vector3()).divideScalar(stars.length) }; // name sits at the middle of its stars
   });
   let hov = null, act = null;
   function setSkill(n) {
@@ -279,7 +280,9 @@ export function createScene({ canvas, labels, brk, bodies, motion, skills = [] }
     } else { cam.target.lerp(wp, 1 - Math.exp(-dt * 10)); cam.dist += (cam.goal - cam.dist) * (1 - Math.exp(-dt * 6)); }
     camera.position.set(Math.cos(cam.pitch) * Math.sin(cam.yaw), Math.sin(cam.pitch), Math.cos(cam.pitch) * Math.cos(cam.yaw)).multiplyScalar(cam.dist).add(cam.target);
     camera.lookAt(cam.target); camera.updateMatrixWorld();
-    sky2.position.copy(camera.position); sky2.updateMatrixWorld(); // stars sit at infinity: no parallax
+    sky2.position.copy(camera.position); // stars sit at infinity: no parallax, but the constellations open out as you zoom in
+    const zs = Math.min(2.4, Math.max(0.75, (SYS / cam.dist) ** 0.4)); for (const c of CONST) c.cg.scale.setScalar(zs);
+    sky2.updateMatrixWorld();
     corona.quaternion.copy(camera.quaternion);
     const showGrid = sel && sel.kind !== 'sun', k = 1 - Math.exp(-dt * 4);
     gridO += ((showGrid ? 1 : 0) - gridO) * k; grid.material.uniforms.o.value = gridO;
@@ -302,7 +305,7 @@ export function createScene({ canvas, labels, brk, bodies, motion, skills = [] }
       if (show) k.el.style.transform = `translate(${(k.sx + 10).toFixed(1)}px,${k.sy.toFixed(1)}px) translate(0,-50%)`;
     }
     for (const c of CONST) {
-      v.copy(c.pos).add(camera.position); v.project(camera); const on = v.z < 1 && !open && Math.abs(v.x) < 1.1 && Math.abs(v.y) < 1.1;
+      c.cg.localToWorld(v.copy(c.pos)); v.project(camera); const on = v.z < 1 && !open && Math.abs(v.x) < 1.1 && Math.abs(v.y) < 1.1;
       c.name.style.display = on ? '' : 'none'; if (on) c.name.style.transform = `translate(${((v.x + 1) / 2 * W).toFixed(1)}px,${((1 - v.y) / 2 * H).toFixed(1)}px) translate(-50%,-50%)`;
     }
     if (sel) {

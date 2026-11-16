@@ -102,7 +102,10 @@ doc.addEventListener('click', (ev) => {
   }
   // button[...]: the body itself carries data-open while a panel is open, so a bare [data-open] would match every click
   if (t.closest('button[data-open]')) { body.dataset.open = ''; doc.querySelector<HTMLElement>('.entry:not([hidden]) [data-close]')?.focus(); }
-  else if (t.closest('button[data-close]')) closePanel();
+  else if (t.closest('button[data-close]')) {
+    if ('open' in body.dataset) closePanel();
+    else if (body.dataset.sel) show(byId.get(body.dataset.sel)!.parent ?? ''); // the small map card: same as Escape
+  }
 });
 doc.addEventListener('submit', async (e) => {
   const form = (e.target as HTMLElement).closest<HTMLFormElement>('form[data-mail]');
@@ -118,7 +121,7 @@ doc.addEventListener('submit', async (e) => {
     if (!r.ok) throw new Error(await r.text());
     form.reset(); status.textContent = 'Message sent. Thank you for reaching out.';
   } catch (err) {
-    console.warn('contact form', err); status.textContent = "That didn't send. Try again, or use one of the links below.";
+    console.warn('contact form', err); status.textContent = "That didn't send. Try again, or use the GitHub or LinkedIn links.";
   }
   btn.disabled = false;
 });
