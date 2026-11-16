@@ -316,6 +316,6 @@ export function createScene({ canvas, labels, brk, bodies, motion, skills = [] }
     select, setSkill,
     setMotion(on) { motion = on; },
     start() { if (running) return; running = true; resize(); dest(cam.target); cam.dist = cam.goal; fly = null; last = performance.now(); raf = requestAnimationFrame(frame); },
-    stop() { running = false; cancelAnimationFrame(raf); },
+    stop() { running = false; cancelAnimationFrame(raf); brk.style.display = 'none'; }, // the brackets are positioned inline; hide them with the map
   };
 }

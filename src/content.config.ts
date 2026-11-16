@@ -11,7 +11,7 @@ const entries = defineCollection({
   schema: z.object({
     title: z.string(),
     short: z.string().optional(), // label on the 3D map when the title is long
-    kind: z.enum(['sun', 'employer', 'role', 'project', 'part', 'asteroid']),
+    kind: z.enum(['sun', 'employer', 'role', 'education', 'project', 'part', 'asteroid']),
     lane: z.enum(['career', 'projects', 'games']).optional(),
     order: z.number(), // orbit order for planets, date order for moons
     what: z.string().optional(), // one line
