@@ -36,6 +36,17 @@ export async function loadBodies(): Promise<Body[]> {
     b.e = Math.max(0, Math.min(0.02 + R() ** 2 * 0.16, 1 - prevApo * 1.04 / b.a)); prevApo = b.a * (1 + b.e);
     b.inc = (0.5 + R() * 6) * Math.PI / 180; b.node = R() * Math.PI * 2; b.peri = R() * Math.PI * 2;
   });
+  // Starting positions: the first two keep their random place; each later planet starts in the middle of the widest
+  // empty arc, so neighbours don't begin side by side. World longitude is about M - peri - node (orbits are near-flat).
+  const TAU = Math.PI * 2, wrap = (x: number) => ((x % TAU) + TAU) % TAU, lon: number[] = [];
+  planets.forEach((b, i) => {
+    if (i >= 2) {
+      const L = [...lon].sort((x, y) => x - y); let best = 0, at = 0;
+      L.forEach((x, k) => { const gap = wrap((L[k + 1] ?? L[0] + TAU) - x); if (gap > best) { best = gap; at = x + gap / 2; } });
+      b.ang = wrap(at + b.peri + b.node);
+    }
+    lon.push(wrap(b.ang - b.peri - b.node));
+  });
   const belt = prevApo + 6;
   rocks.forEach((b, i) => { const R = rnd(b.id); b.seed = R() * 50; b.a = belt + (R() - 0.5) * 2; b.ang = (i / rocks.length) * Math.PI * 2 + 0.6; });
   for (const b of bodies.filter((b) => b.parent)) {

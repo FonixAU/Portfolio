@@ -6,6 +6,7 @@ const bodies = await loadBodies();
 const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
 const sun = bodies.find((b) => b.kind === 'sun')!;
 const jobs = bodies.filter((b) => b.kind === 'employer');
+const study = bodies.filter((b) => b.kind === 'education');
 const projects = bodies.filter((b) => b.kind === 'project');
 const kids = (id: string) => bodies.filter((b) => b.parent === id);
 const groups = Object.entries(Object.groupBy(skills(bodies), (s) => s.group));
@@ -37,6 +38,8 @@ const groups = Object.entries(Object.groupBy(skills(bodies), (s) => s.group));
     {kids(j.id).length === 0 && <Fragment set:html={j.entry.rendered?.html ?? ''} />}
   </section>
 ))}
+{study.length > 0 && <h2>Education</h2>}
+{study.map((d) => <section><h3>{d.title} <span class="when">· {d.what} · {d.when}</span></h3></section>)}
 <h2>Projects</h2>
 <ul>{projects.map((p) => <li><strong>{p.title}</strong>{p.what && `: ${p.what}`}{p.stack.length > 0 && <span class="sub"> ({p.stack.join(', ')})</span>}</li>)}</ul>
 <h2>Skills</h2>

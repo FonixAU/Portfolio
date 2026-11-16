@@ -1,11 +1,13 @@
 // Page behaviour. Every URL already contains the whole log as HTML; this script only
 // switches which entry is showing, keeps the URL in step, and adds the 3D map when asked.
 type SceneBody = { id: string; url: string; title: string; label: string; kind: string; lane: string | null; parent: string | null };
-type Scene = { select(id: string): void; setMotion(on: boolean): void; start(): void; stop(): void };
+type Scene = { select(id: string): void; setSkill(name: string | null): void; setMotion(on: boolean): void; start(): void; stop(): void };
 
 const doc = document, body = doc.body, base = body.dataset.base!;
 const bodies: SceneBody[] = JSON.parse(doc.getElementById('scene')!.textContent!);
 const byId = new Map(bodies.map((b) => [b.id, b]));
+const skills: { name: string; used: string[] }[] = JSON.parse(doc.getElementById('skills')!.textContent!);
+let skill = new URLSearchParams(location.search).get('skill');
 const LANES: Record<string, string> = { career: 'Career', projects: 'Projects', games: 'Games' };
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => doc.getElementById(id) as T;
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
@@ -44,8 +46,18 @@ function show(id: string, push = true) {
   $('crumb').innerHTML = `<a href="${base}" data-id="">System</a>` + (b
     ? (b.lane ? `<span> / ${LANES[b.lane]}</span>` : b.kind === 'asteroid' ? '<span> / Minor works &amp; in-progress</span>' : '') + (parent ? `<span> / <a href="${parent.url}" data-id="${parent.id}">${esc(parent.title)}</a></span>` : '') + `<span> / ${esc(b.title)}</span>`
     : '');
-  if (push) history.pushState(null, '', b ? b.url : base);
+  if (push) history.pushState(null, '', (b ? b.url : base) + location.search);
   scene?.select(stay ? root(id)! : id);
+}
+/** Light the bodies that use one skill; the choice lives in ?skill= so it can be shared. */
+function setSkill(n: string | null) {
+  const k = skills.find((s) => s.name === n) ?? null, chip = $('skillchip'), u = new URL(location.href);
+  skill = k?.name ?? null;
+  if (skill) u.searchParams.set('skill', skill); else u.searchParams.delete('skill');
+  history.replaceState(null, '', u);
+  chip.hidden = !k;
+  if (k) chip.textContent = `\u2605 ${k.name} \u00b7 ${k.used.length ? k.used.map((id) => byId.get(id)!.title).join(', ') : 'no entry yet'}  \u2715`;
+  scene?.setSkill(skill);
 }
 const idFromUrl = () => decodeURIComponent(location.pathname.slice(base.length)).replace(/\/$/, '');
 
@@ -54,6 +66,7 @@ async function setView(v: '3d' | 'log', remember = true) {
     try {
       const { createScene } = await import('./scene');
       scene = createScene({ canvas: $<HTMLCanvasElement>('map'), labels: $('labels'), brk: $('brk'), bodies, motion, skills: JSON.parse($('skills').textContent!) }) as Scene;
+      scene.setSkill(skill);
     } catch (e) {
       console.warn('3D map unavailable, staying in the log view', e);
       sceneFailed = true; $('v3d').hidden = true;
@@ -74,6 +87,11 @@ function closePanel() {
 }
 doc.addEventListener('click', (ev) => {
   const e = ev as MouseEvent, t = e.target as HTMLElement;
+  const sk = t.closest<HTMLAnchorElement>('a[data-skill]');
+  if (sk && !e.metaKey && !e.ctrlKey && e.button === 0) { // a skill tag: show it on the map
+    e.preventDefault(); delete body.dataset.open; setSkill(sk.dataset.skill!); if (body.dataset.view !== '3d') setView('3d');
+    return;
+  }
   const a = t.closest<HTMLAnchorElement>('a[data-id]');
   if (a && !e.metaKey && !e.ctrlKey && !e.shiftKey && e.button === 0) {
     e.preventDefault();
@@ -112,6 +130,8 @@ addEventListener('keydown', (e) => {
   else if (body.dataset.view !== '3d') return;
   else if (body.dataset.sel) show(byId.get(body.dataset.sel)!.parent ?? '');
 });
+doc.addEventListener('skill', (e) => setSkill((e as CustomEvent<string | null>).detail)); // a star was clicked
+$('skillchip').onclick = () => setSkill(null);
 doc.addEventListener('pick', (e) => show((e as CustomEvent<string>).detail)); // a body was clicked in the 3D map
 
 $('menu').onclick = () => { const open = !('menu' in body.dataset); setMenu(open); if (open) doc.querySelector<HTMLElement>('#list [aria-current], #list a')?.focus(); };
@@ -124,5 +144,5 @@ motionBtn.onclick = () => { motion = !motion; store.set('motion', motion ? 'on' 
 // 3D by default only where it is likely to be pleasant: a roomy screen, WebGL 2, and no reduced-motion request.
 const capable = () => { try { return !!doc.createElement('canvas').getContext('webgl2'); } catch { return false; } };
 const want = store.get('view') ?? (!reduced && innerWidth >= 760 && capable() ? '3d' : 'log');
-setView(want === '3d' ? '3d' : 'log', false);
+setView(want === '3d' ? '3d' : 'log', false).then(() => setSkill(skill));
 (window as any).__ready = true;

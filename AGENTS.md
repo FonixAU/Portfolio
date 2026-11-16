@@ -18,7 +18,7 @@ To add or change work on the site you edit content files only. You should not ne
 ```yaml
 title: "Project name"
 short: "PN"                 # optional: label on the 3D map when the title is long
-kind: "project"             # sun | employer | role | project | part | asteroid
+kind: "project"             # sun | employer | role | education | project | part | asteroid
 lane: "projects"            # career | projects | games. Planets only.
 order: 30                   # planets: orbit order from the sun. Moons: date order.
 what: "One line: what it is and who it is for"
@@ -36,9 +36,9 @@ body: { shape: "rugged", size: 2, palette: ["#3c6e5a", "#7fc8a9", "#1e3a30"] }  
 
 Rules:
 - `kind: asteroid` is for minor works and things still in progress (shown as "Minor works & in-progress"). Asteroids have no `lane` and no `body`.
-- Employers are always `shape: world`. Other planets pick the shape that suits them from: `ocean`, `giant`, `crystal`, `twin`, `rugged`, `holo`, `shattered`, `molten`, `comet`.
+- Employers and education are always `shape: world` (lane `career`). Other planets pick the shape that suits them from: `ocean`, `giant`, `crystal`, `twin`, `rugged`, `holo`, `shattered`, `molten`, `comet`.
 - `palette` is three hex colours: main, secondary, accent. `size` is 1 to 3 for how substantial the work is.
-- Reuse the exact spelling of technologies already used in other entries or in `src/lib/skills.ts` (`Next.js`, not `NextJS`). New tags appear automatically in the sun's Skills list, the résumé and the 3D skills ring; add a name to `src/lib/skills.ts` only for experience with no entry.
+- Reuse the exact spelling of technologies already used in other entries or in `src/lib/skills.ts` (`Next.js`, not `NextJS`). New tags appear automatically in the sun's Skills list, the résumé and the 3D map's skill constellations; add a name to `src/lib/skills.ts` only for experience with no entry.
 - Only real work. If something is not real yet, it does not get an entry.
 - Never invent an outcome, a number or a date. Leave the field out and say so in the pull request.
 - Never add contact details, employer-confidential material or anything from a private repository the owner has not approved.
