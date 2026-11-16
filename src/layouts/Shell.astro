@@ -4,6 +4,7 @@
 import '../styles/site.css';
 import Entry from '../components/Entry.astro';
 import { loadBodies, sceneData, LANES } from '../lib/bodies';
+import { skills } from '../lib/skills';
 import { icon, iconDefs } from '../lib/icon';
 interface Props { current?: string }
 const { current = '' } = Astro.props;
@@ -103,12 +104,13 @@ const description = shown.what ?? `${NAME}'s portfolio, as a solar system you ca
   </nav>
   <div id="entries">
     <h2 class="hd">Log</h2>
-    {bodies.map((b) => <article class="entry" data-id={b.id} data-kind={b.kind} hidden={b !== shown}><Entry b={b} kids={kidsOf(b.id)} /></article>)}
+    {bodies.map((b) => <article class="entry" data-id={b.id} data-kind={b.kind} hidden={b !== shown}><Entry b={b} kids={kidsOf(b.id)} skills={b.kind === 'sun' ? skills(bodies) : []} /></article>)}
   </div>
 </main>
 
 <div id="hints" aria-hidden="true">Drag to rotate<br>Scroll or pinch to zoom<br>Esc to go back</div>
 <script type="application/json" id="scene" set:html={JSON.stringify(sceneData(bodies))}></script>
+<script type="application/json" id="skills" set:html={JSON.stringify(skills(bodies).map((s) => ({ name: s.name, used: s.used.map((b) => b.id) })))}></script>
 <script>import '../scripts/app.ts';</script>
 </body>
 </html>

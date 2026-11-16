@@ -38,7 +38,7 @@ Rules:
 - `kind: asteroid` is for minor works and things still in progress (shown as "Minor works & in-progress"). Asteroids have no `lane` and no `body`.
 - Employers are always `shape: world`. Other planets pick the shape that suits them from: `ocean`, `giant`, `crystal`, `twin`, `rugged`, `holo`, `shattered`, `molten`, `comet`.
 - `palette` is three hex colours: main, secondary, accent. `size` is 1 to 3 for how substantial the work is.
-- Reuse the exact spelling of technologies already used in other entries (`Next.js`, not `NextJS`).
+- Reuse the exact spelling of technologies already used in other entries or in `src/lib/skills.ts` (`Next.js`, not `NextJS`). New tags appear automatically in the sun's Skills list, the résumé and the 3D skills ring; add a name to `src/lib/skills.ts` only for experience with no entry.
 - Only real work. If something is not real yet, it does not get an entry.
 - Never invent an outcome, a number or a date. Leave the field out and say so in the pull request.
 - Never add contact details, employer-confidential material or anything from a private repository the owner has not approved.

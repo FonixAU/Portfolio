@@ -118,11 +118,14 @@ html.js body[data-menu] #top { z-index: 9; }
 .badge.live { color: var(--green); } .badge.in-progress { color: #fac775; }
 .what { margin: 0 0 4px; font-size: 16px; }
 .meta { margin: 0 0 10px; color: var(--dim); font-size: 14px; }
-.tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 4px; padding: 0; list-style: none; }
+.tags { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 6px; margin: 0 0 4px; padding: 0; list-style: none; }
 .tags li { font: 11px var(--mono); padding: 2px 7px; border: 1px solid var(--rule); color: #fac775; }
+.tags li.quiet, .tags li.more { color: var(--dim); }
+.skills .tags { padding: 0; }
+.skills h4 { margin: 10px 0 5px; font: 11px var(--mono); letter-spacing: .09em; text-transform: uppercase; color: var(--dim); }
 .btn { display: inline-block; margin-top: 10px; padding: 6px 12px; font: 12px var(--mono); letter-spacing: .06em; text-transform: uppercase; text-decoration: none; border: 1px solid rgba(var(--blue), .6); }
 .btn:hover { background: rgba(var(--blue), .14); }
-.open, .close { display: none; }
+.open, .close, .back { display: none; }
 .full { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--rule); display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 6px 32px; }
 .full:empty, .full:not(:has(section, figure, .links)) { display: none; }
 .full h3 { margin: 6px 0 4px; font: 500 11px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--dim); }
@@ -151,6 +154,8 @@ body[data-view="3d"] :is(#map, #labels, #brk, #hints) { display: block; }
 .lab { position: absolute; left: 0; top: 0; pointer-events: auto; padding: 6px 4px; white-space: nowrap; text-decoration: none; font: 12px var(--mono); letter-spacing: .09em; text-transform: uppercase; text-shadow: 0 0 6px #000, 0 0 2px #000; }
 .lab.minor { font-size: 11px; color: var(--dim); }
 .lab:hover { color: #fff; }
+.lab.skill { color: #fac775; pointer-events: none; }
+.lab.lit { color: var(--green); }
 #brk { position: fixed; pointer-events: none; }
 #hints { position: fixed; right: 20px; bottom: 14px; text-align: right; color: var(--dim); font-size: 13px; line-height: 1.7; pointer-events: none; }
 body[data-view="3d"] #log { display: block; min-height: 0; padding: 0; background: none; }
@@ -178,6 +183,8 @@ html.js body[data-open] .entry:not([hidden]) { position: fixed; z-index: 6; inse
   .open { display: none; }
   h2 { flex: none; margin: 0 -14px; padding: 10px 96px 10px 14px; border-bottom: 1px solid var(--rule); background: rgba(var(--blue), .1); }
   .close { display: inline-block; position: absolute; top: 7px; right: 14px; margin: 0; }
+  .back { display: inline-block; position: absolute; top: 7px; right: 92px; margin: 0; }
+  &:has(.back) h2 { padding-right: 176px; }
   .info > :last-child, .kids, .links { margin-bottom: 0; }
   :is(.sub, .desc, .shots) { flex: none; border: 1px solid var(--rule); background: rgba(4, 9, 16, .6); }
   .sub h3 { margin: 0; padding: 7px 12px; color: var(--green); border-bottom: 1px solid var(--rule); background: rgba(var(--blue), .06); }
@@ -232,7 +239,8 @@ html.js body[data-open] .entry:not([hidden]) { position: fixed; z-index: 6; inse
   html.js body[data-open] .entry:not([hidden]) { inset: 50px 0 0; width: auto; height: auto; max-height: none; border-width: 1px 0 0; }
   html.js body[data-open] .entry .shots { flex-direction: column; gap: 8px; overflow: visible; border: 0; background: none; } /* phones: pictures stacked, each at its own size */
   html.js body[data-open] .entry .shots img { width: 100%; height: auto; border: 1px solid var(--rule); }
-  html.js body[data-open] .entry .close { top: 5px; right: 10px; padding-block: 7px; }
+  html.js body[data-open] .entry :is(.close, .back) { top: 5px; right: 10px; padding-block: 7px; }
+  html.js body[data-open] .entry .back { right: 84px; }
 }
 @media (min-width: 480px) and (max-width: 760px) { .entry { padding: 16px 20px 20px; } #logtitle { margin-inline: 20px; } }
 @media (min-width: 761px) and (max-width: 1100px) { #log { grid-template-columns: 210px minmax(0, 1fr); } #lineup { --k: .82; } }
