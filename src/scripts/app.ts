@@ -96,8 +96,10 @@ doc.addEventListener('click', (ev) => {
   if (a && !e.metaKey && !e.ctrlKey && !e.shiftKey && e.button === 0) {
     e.preventDefault();
     const keep = 'open' in body.dataset && a.closest('.entry'); // a link inside an open panel opens the next entry's panel
+    // the sun's id is '', which show() treats as "whole system"; on the phone log, tapping it in the line-up/list still opens its panel
+    const sun = !a.dataset.id && body.dataset.view !== '3d' && phone.matches && a.closest('#lineup, #list');
     show(a.dataset.id!);
-    if (keep && a.dataset.id) body.dataset.open = '';
+    if ((keep && a.dataset.id) || sun) body.dataset.open = '';
     return;
   }
   // button[...]: the body itself carries data-open while a panel is open, so a bare [data-open] would match every click
